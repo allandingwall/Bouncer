@@ -2,10 +2,58 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
     <title>Bouncer</title>
+    <link rel="stylesheet" href="./popup.css" />
   </head>
   <body>
-    <!-- Popup implementation arrives in the popup phase. -->
-    <p>Bouncer</p>
+    <main class="page">
+      <header class="masthead">
+        <span class="wordmark" aria-hidden="true">&#xA7B3;</span>
+        <span class="visually-hidden">Bouncer</span>
+        <span class="masthead-status">block this</span>
+      </header>
+
+      <p id="current-url" class="current-url">—</p>
+
+      <form id="add-form" class="add-form" novalidate>
+        <label class="field">
+          <span class="field-label">Pattern</span>
+          <input
+            id="pattern"
+            type="text"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            required
+          />
+        </label>
+
+        <label class="field">
+          <span class="field-label">Match type</span>
+          <select id="match-type">
+            <option value="domain">Domain (and subdomains)</option>
+            <option value="exact">Exact URL</option>
+            <option value="wildcard">Wildcard</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span class="field-label">Note (optional)</span>
+          <input id="note" type="text" autocomplete="off" />
+        </label>
+
+        <p id="error" class="error" role="alert" hidden></p>
+
+        <button type="submit" class="btn btn-primary">Block</button>
+      </form>
+
+      <footer class="footer">
+        <a id="open-options" href="#">Manage all rules →</a>
+      </footer>
+    </main>
+
+    <script type="module" src="./popup.ts"></script>
   </body>
 </html>

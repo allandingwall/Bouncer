@@ -1,5 +1,10 @@
-import { createRule, groupsOf, isDuplicate, validatePattern } from '../lib/rules.js';
+import { createRule, groupsOf, isDuplicate, validateGroup, validatePattern } from '../lib/rules.js';
 import { loadGlobalEnabled, loadRules, saveGlobalEnabled, saveRules } from '../lib/storage.js';
+import {
+  insertNewGroupOption,
+  NEW_GROUP_SENTINEL,
+  populateGroupSelect,
+} from '../lib/group-select.js';
 import { suggestPattern } from './suggest.js';
 import type { BlockRule, MatchType } from '../lib/types.js';
 
@@ -37,15 +42,16 @@ async function init(): Promise<void> {
     void onSubmit();
   });
 
-  // Pre-populate the groups datalist so the user gets typeahead from the
-  // groups they've already named. We load best-effort — if storage is down
-  // the input just won't autocomplete.
+  // Populate the group dropdown from the user's existing groups. Best-effort:
+  // if storage is unavailable the dropdown just offers "(Ungrouped)" and
+  // "+ New group…".
   try {
     cachedRules = await loadRules();
-    refreshGroupsDatalist();
   } catch {
     cachedRules = [];
   }
+  refreshGroupSelect();
+  $<HTMLSelectElement>('#group').addEventListener('change', onGroupSelectChange);
 
   $<HTMLAnchorElement>('#open-options').addEventListener('click', (e) => {
     e.preventDefault();
@@ -101,22 +107,51 @@ function refreshPattern(matchType: MatchType): void {
   $<HTMLInputElement>('#pattern').value = suggestPattern(currentUrl, matchType);
 }
 
-function refreshGroupsDatalist(): void {
-  const list = $<HTMLDataListElement>('#groups-list');
-  list.replaceChildren();
-  for (const group of groupsOf(cachedRules)) {
-    if (group === null) continue;
-    const opt = document.createElement('option');
-    opt.value = group;
-    list.append(opt);
+/**
+ * Rebuild the `<select id="group">` options from current `cachedRules`,
+ * preserving whatever was selected before the rebuild (so the value still
+ * survives re-renders after a successful add).
+ */
+function refreshGroupSelect(): void {
+  const select = $<HTMLSelectElement>('#group');
+  const preserve = select.value;
+  const namedGroups = groupsOf(cachedRules).filter((g): g is string => g !== null);
+  populateGroupSelect(select, namedGroups, preserve);
+}
+
+/** Handle the "+ New group…" sentinel: prompt, validate, append + select. */
+function onGroupSelectChange(): void {
+  const select = $<HTMLSelectElement>('#group');
+  if (select.value !== NEW_GROUP_SENTINEL) return;
+
+  const raw = window.prompt('New group name', '');
+  if (raw === null) {
+    select.value = '';
+    return;
   }
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    select.value = '';
+    return;
+  }
+  const v = validateGroup(trimmed);
+  if (!v.valid) {
+    window.alert(v.message ?? 'Invalid group name.');
+    select.value = '';
+    return;
+  }
+  insertNewGroupOption(select, trimmed);
 }
 
 async function onSubmit(): Promise<void> {
   const pattern = $<HTMLInputElement>('#pattern').value;
   const matchType = $<HTMLSelectElement>('#match-type').value as MatchType;
   const note = $<HTMLInputElement>('#note').value;
-  const group = $<HTMLInputElement>('#group').value;
+  const groupSel = $<HTMLSelectElement>('#group');
+  // If the dropdown is still on the sentinel (shouldn't happen — the change
+  // handler reverts it — but defensive), treat as ungrouped rather than
+  // pass the magic string into createRule.
+  const group = groupSel.value === NEW_GROUP_SENTINEL ? '' : groupSel.value;
 
   const validation = validatePattern(pattern, matchType);
   if (!validation.valid) {
@@ -146,7 +181,7 @@ async function onSubmit(): Promise<void> {
   }
 
   cachedRules = [candidate, ...rules];
-  refreshGroupsDatalist();
+  refreshGroupSelect();
 
   showError(null);
   showStatus(`Added ${candidate.pattern}`);

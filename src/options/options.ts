@@ -11,6 +11,11 @@ import {
 } from '../lib/rules.js';
 import { loadState, saveGlobalEnabled, saveRules } from '../lib/storage.js';
 import { matchTypeLabel } from '../lib/matcher.js';
+import {
+  insertNewGroupOption,
+  NEW_GROUP_SENTINEL,
+  populateGroupSelect,
+} from '../lib/group-select.js';
 import type { BlockRule, MatchType } from '../lib/types.js';
 
 /**
@@ -103,29 +108,49 @@ function bindEvents(): void {
     void onImport(e);
   });
   $<HTMLButtonElement>('#clear-all').addEventListener('click', onClearAll);
+  $<HTMLSelectElement>('#add-group').addEventListener('change', onAddGroupSelectChange);
+}
+
+/** Handle the "+ New group…" sentinel on the add-form's group dropdown. */
+function onAddGroupSelectChange(): void {
+  const select = $<HTMLSelectElement>('#add-group');
+  if (select.value !== NEW_GROUP_SENTINEL) return;
+
+  const raw = window.prompt('New group name', '');
+  if (raw === null) {
+    select.value = '';
+    return;
+  }
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    select.value = '';
+    return;
+  }
+  const v = validateGroup(trimmed);
+  if (!v.valid) {
+    window.alert(v.message ?? 'Invalid group name.');
+    select.value = '';
+    return;
+  }
+  insertNewGroupOption(select, trimmed);
 }
 
 function onSubmitAdd(e: Event): void {
   e.preventDefault();
   const pattern = $<HTMLInputElement>('#add-pattern').value;
   const matchType = $<HTMLSelectElement>('#add-type').value as MatchType;
-  const note = $<HTMLInputElement>('#add-note').value;
-  const group = $<HTMLInputElement>('#add-group').value;
+  const groupSel = $<HTMLSelectElement>('#add-group');
+  // Defensive — the change handler reverts the sentinel before submit can
+  // reach it, but never trust the DOM to be in the state you left it.
+  const group = groupSel.value === NEW_GROUP_SENTINEL ? '' : groupSel.value;
 
   const validation = validatePattern(pattern, matchType);
   if (!validation.valid) {
     showAddError(validation.message ?? 'Invalid pattern.');
     return;
   }
-  if (group.trim()) {
-    const groupValidation = validateGroup(group);
-    if (!groupValidation.valid) {
-      showAddError(groupValidation.message ?? 'Invalid group name.');
-      return;
-    }
-  }
 
-  const rule = createRule({ pattern, matchType, note, group });
+  const rule = createRule({ pattern, matchType, group });
   if (state.rules.some((r) => isDuplicate(r, rule))) {
     showAddError('A rule with this pattern and type already exists.');
     return;
@@ -139,9 +164,8 @@ function onSubmitAdd(e: Event): void {
 
 function clearAddForm(): void {
   $<HTMLInputElement>('#add-pattern').value = '';
-  $<HTMLInputElement>('#add-note').value = '';
-  // Intentionally leave the group field populated — typical flow is "add a
-  // few rules in the same group", so preserving it cuts re-typing.
+  // Group field is intentionally preserved — typical flow is "add a few
+  // rules in the same group", so keeping the selection cuts re-clicks.
   $<HTMLInputElement>('#add-pattern').focus();
 }
 
@@ -258,20 +282,19 @@ function renderClearAll(): void {
 
 function render(): void {
   renderStorageNote();
-  renderGroupsDatalist();
+  renderAddGroupSelect();
   renderList();
   renderClearAll();
 }
 
-function renderGroupsDatalist(): void {
-  const list = $<HTMLDataListElement>('#add-groups-list');
-  list.replaceChildren();
-  for (const group of groupsOf(state.rules)) {
-    if (group === null) continue;
-    const opt = document.createElement('option');
-    opt.value = group;
-    list.append(opt);
-  }
+function renderAddGroupSelect(): void {
+  const select = $<HTMLSelectElement>('#add-group');
+  // Preserve whatever was selected before — including a brand-new group
+  // the user just created via the prompt (which is in the option list but
+  // not yet in `state.rules` until the form is submitted).
+  const preserve = select.value;
+  const namedGroups = groupsOf(state.rules).filter((g): g is string => g !== null);
+  populateGroupSelect(select, namedGroups, preserve);
 }
 
 function renderStorageNote(): void {
@@ -425,45 +448,16 @@ function buildMoveSelect(rule: BlockRule): HTMLSelectElement {
   const select = document.createElement('select');
   select.className = 'rule-move';
   select.setAttribute('aria-label', `Move rule '${rule.pattern}' to group`);
-
   const groupNames = groupsOf(state.rules).filter((g): g is string => g !== null);
-
-  const ungrouped = document.createElement('option');
-  ungrouped.value = '';
-  ungrouped.textContent = '(Ungrouped)';
-  if (!rule.group) ungrouped.selected = true;
-  select.append(ungrouped);
-
-  for (const g of groupNames) {
-    const opt = document.createElement('option');
-    opt.value = g;
-    opt.textContent = g;
-    if (rule.group === g) opt.selected = true;
-    select.append(opt);
-  }
-
-  if (groupNames.length > 0) {
-    const sep = document.createElement('option');
-    sep.disabled = true;
-    sep.textContent = '──────';
-    select.append(sep);
-  }
-
-  const newOpt = document.createElement('option');
-  newOpt.value = MOVE_NEW_GROUP_SENTINEL;
-  newOpt.textContent = '+ New group…';
-  select.append(newOpt);
-
+  populateGroupSelect(select, groupNames, rule.group ?? '');
   select.addEventListener('change', () => onMoveSelectChange(rule, select));
   return select;
 }
 
-const MOVE_NEW_GROUP_SENTINEL = '__bouncer_new_group__';
-
 function onMoveSelectChange(rule: BlockRule, select: HTMLSelectElement): void {
   const value = select.value;
 
-  if (value === MOVE_NEW_GROUP_SENTINEL) {
+  if (value === NEW_GROUP_SENTINEL) {
     const raw = window.prompt('New group name', rule.group ?? '');
     // Cancelled — revert the select to whatever it was showing.
     if (raw === null) {

@@ -80,28 +80,9 @@
           </label>
           <label class="field field-group">
             <span class="field-label">Group</span>
-            <input
-              type="text"
-              id="add-group"
-              name="group"
-              autocomplete="off"
-              autocapitalize="off"
-              spellcheck="false"
-              list="add-groups-list"
-              maxlength="60"
-              placeholder="(none)"
-            />
-            <datalist id="add-groups-list"></datalist>
-          </label>
-          <label class="field field-note">
-            <span class="field-label">Note (optional)</span>
-            <input
-              type="text"
-              id="add-note"
-              name="note"
-              autocomplete="off"
-              placeholder="focus hours"
-            />
+            <select id="add-group" name="group">
+              <!-- options populated by JS -->
+            </select>
           </label>
           <button type="submit" class="btn btn-primary">Add rule</button>
         </form>

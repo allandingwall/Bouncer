@@ -16,6 +16,9 @@ export function suggestPattern(url: string, matchType: MatchType): string {
     case 'domain':
       return host;
     case 'wildcard':
-      return `*.${host}/*`;
+      // Literal host (no `*`) auto-allows a subdomain prefix in the matcher,
+      // so `host/*` covers both the apex and every subdomain — and crucially
+      // matches the URL the user is suggesting from. `*.host/*` would not.
+      return `${host}/*`;
   }
 }

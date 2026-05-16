@@ -81,6 +81,60 @@ body {
   color: var(--muted);
 }
 
+/* Master switch */
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+.switch input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.switch-track {
+  position: relative;
+  width: 2.25rem;
+  height: 1.125rem;
+  background: var(--hairline);
+  border-radius: 999px;
+  transition: background 140ms;
+}
+.switch-track::after {
+  content: '';
+  position: absolute;
+  top: 0.125rem;
+  left: 0.125rem;
+  width: 0.875rem;
+  height: 0.875rem;
+  background: var(--bg);
+  border-radius: 50%;
+  transition: transform 140ms;
+}
+.switch input:checked ~ .switch-track {
+  background: var(--accent);
+}
+.switch input:checked ~ .switch-track::after {
+  transform: translateX(1.125rem);
+}
+.switch input:focus-visible ~ .switch-track {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.switch-label {
+  font-family: var(--sans);
+  font-size: 0.625rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  min-width: 3.2rem;
+}
+.switch input:checked ~ .switch-label {
+  color: var(--accent);
+}
+
 /* Current URL */
 .current-url {
   font-family: var(--mono);

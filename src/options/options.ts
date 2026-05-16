@@ -7,7 +7,7 @@ import {
   updateRule,
   validatePattern,
 } from '../lib/rules.js';
-import { loadState, saveRules } from '../lib/storage.js';
+import { loadState, saveGlobalEnabled, saveRules } from '../lib/storage.js';
 import { matchTypeLabel } from '../lib/matcher.js';
 import type { BlockRule, MatchType } from '../lib/types.js';
 
@@ -50,9 +50,11 @@ async function persist(): Promise<void> {
 }
 
 async function init(): Promise<void> {
+  let globalEnabled = true;
   try {
     const { state: stored, source } = await loadState();
     state.rules = stored.rules;
+    globalEnabled = stored.globalEnabled !== false;
     if (source === 'local') {
       storageWarning = 'Reading from local storage (sync unavailable).';
     }
@@ -60,7 +62,22 @@ async function init(): Promise<void> {
     storageWarning = 'Could not load rules.';
   }
   bindEvents();
+  wireGlobalToggle(globalEnabled);
   render();
+}
+
+function wireGlobalToggle(initial: boolean): void {
+  const input = $<HTMLInputElement>('#global-toggle');
+  const label = $<HTMLSpanElement>('#global-toggle-label');
+  const setLabel = (enabled: boolean): void => {
+    label.textContent = enabled ? 'active' : 'paused';
+  };
+  input.checked = initial;
+  setLabel(initial);
+  input.addEventListener('change', () => {
+    setLabel(input.checked);
+    void saveGlobalEnabled(input.checked);
+  });
 }
 
 function bindEvents(): void {

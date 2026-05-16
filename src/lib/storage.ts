@@ -106,20 +106,44 @@ export async function loadRules(backend?: StorageBackend): Promise<BlockRule[]> 
 }
 
 export async function saveRules(rules: BlockRule[], backend?: StorageBackend): Promise<SaveResult> {
-  return saveState({ rules, version: CURRENT_SCHEMA_VERSION }, backend);
+  const { state } = await loadState(backend);
+  return saveState({ ...state, rules, version: CURRENT_SCHEMA_VERSION }, backend);
 }
 
-/** Subscribe to rule changes from any source (e.g. another tab editing rules). */
-export function onRulesChanged(
-  callback: (rules: BlockRule[]) => void,
+/** Read the master enable flag. Defaults to true if unset. */
+export async function loadGlobalEnabled(backend?: StorageBackend): Promise<boolean> {
+  const { state } = await loadState(backend);
+  return state.globalEnabled !== false;
+}
+
+/** Write the master enable flag. */
+export async function saveGlobalEnabled(
+  value: boolean,
+  backend?: StorageBackend,
+): Promise<SaveResult> {
+  const { state } = await loadState(backend);
+  return saveState({ ...state, globalEnabled: value, version: CURRENT_SCHEMA_VERSION }, backend);
+}
+
+/** Subscribe to state changes from any source (e.g. another tab editing rules). */
+export function onStateChanged(
+  callback: (state: StoredState) => void,
   backend: StorageBackend = defaultBackend(),
 ): () => void {
   const listener = (changes: Record<string, browser.storage.StorageChange>): void => {
     const change = changes[STORAGE_KEY];
     if (!change) return;
     const next: unknown = change.newValue;
-    if (isStoredState(next)) callback(next.rules);
+    if (isStoredState(next)) callback(next);
   };
   backend.onChanged.addListener(listener);
   return () => backend.onChanged.removeListener(listener);
+}
+
+/** Convenience wrapper for callers that only care about the rules array. */
+export function onRulesChanged(
+  callback: (rules: BlockRule[]) => void,
+  backend?: StorageBackend,
+): () => void {
+  return onStateChanged((state) => callback(state.rules), backend);
 }

@@ -1,5 +1,5 @@
 import { createRule, isDuplicate, validatePattern } from '../lib/rules.js';
-import { loadRules, saveRules } from '../lib/storage.js';
+import { loadGlobalEnabled, loadRules, saveGlobalEnabled, saveRules } from '../lib/storage.js';
 import { suggestPattern } from './suggest.js';
 import type { MatchType } from '../lib/types.js';
 
@@ -54,6 +54,26 @@ async function init(): Promise<void> {
     $<HTMLInputElement>('#pattern').disabled = true;
     $<HTMLButtonElement>('button[type="submit"]').disabled = true;
   }
+
+  await wireGlobalToggle();
+}
+
+async function wireGlobalToggle(): Promise<void> {
+  const input = $<HTMLInputElement>('#global-toggle');
+  const label = $<HTMLSpanElement>('#global-toggle-label');
+  const setLabel = (enabled: boolean): void => {
+    label.textContent = enabled ? 'active' : 'paused';
+  };
+  try {
+    input.checked = await loadGlobalEnabled();
+  } catch {
+    input.checked = true;
+  }
+  setLabel(input.checked);
+  input.addEventListener('change', () => {
+    setLabel(input.checked);
+    void saveGlobalEnabled(input.checked);
+  });
 }
 
 async function getActiveTab(): Promise<browser.tabs.Tab | undefined> {

@@ -11,7 +11,11 @@
     <main class="page">
       <header class="masthead">
         <span class="wordmark">Bouncer</span>
-        <span class="masthead-status">block this</span>
+        <label class="switch" title="Pause or resume all blocking">
+          <input type="checkbox" id="global-toggle" />
+          <span class="switch-track" aria-hidden="true"></span>
+          <span id="global-toggle-label" class="switch-label">active</span>
+        </label>
       </header>
 
       <p id="current-url" class="current-url">—</p>

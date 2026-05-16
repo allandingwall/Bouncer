@@ -1,5 +1,5 @@
 import { findMatchingRules } from '../lib/matcher.js';
-import { loadRules, onRulesChanged } from '../lib/storage.js';
+import { loadState, onStateChanged } from '../lib/storage.js';
 import { applyRules } from './rule-engine.js';
 import type { BlockRule } from '../lib/types.js';
 
@@ -7,29 +7,30 @@ import type { BlockRule } from '../lib/types.js';
  * Background entry point.
  *
  * Responsibilities:
- *  - On startup / install: load rules from storage and apply them via
- *    declarativeNetRequest (covers real network navigations).
+ *  - On startup / install: load state and apply rules via declarativeNetRequest
+ *    (covers real network navigations).
  *  - On any storage change: re-apply.
+ *  - When the master switch is off, clear DNR rules and ignore SPA navigations.
  *  - Listen for client-side route changes via webNavigation and force-redirect
  *    matching URLs. DNR only sees real navigation requests, so SPAs (Reddit,
  *    Twitter, etc.) that route via history.pushState would otherwise slip past.
- *
- * The service worker holds no mutable state of its own. All persistence lives
- * in browser.storage; the DNR ruleset is fully derived from it.
  */
 
 const BLOCK_PAGE_PATH = 'blocked/blocked.html';
 
 let cachedRules: BlockRule[] = [];
+let globallyEnabled = true;
 
 async function syncFromStorage(): Promise<void> {
-  cachedRules = await loadRules();
-  await safelyApply(cachedRules);
+  const { state } = await loadState();
+  cachedRules = state.rules;
+  globallyEnabled = state.globalEnabled !== false;
+  await safelyApply();
 }
 
-async function safelyApply(rules: BlockRule[]): Promise<void> {
+async function safelyApply(): Promise<void> {
   try {
-    await applyRules(rules);
+    await applyRules(globallyEnabled ? cachedRules : []);
   } catch (err) {
     console.error('[Bouncer] failed to apply rules', err);
   }
@@ -43,9 +44,10 @@ browser.runtime.onStartup.addListener(() => {
   void syncFromStorage();
 });
 
-onRulesChanged((rules) => {
-  cachedRules = rules;
-  void safelyApply(rules);
+onStateChanged((state) => {
+  cachedRules = state.rules;
+  globallyEnabled = state.globalEnabled !== false;
+  void safelyApply();
 });
 
 void syncFromStorage();
@@ -63,7 +65,8 @@ function shouldGuard(url: string): boolean {
 }
 
 function onClientNav(details: browser.webNavigation._OnHistoryStateUpdatedDetails): void {
-  if (details.frameId !== 0) return; // top-level only
+  if (!globallyEnabled) return;
+  if (details.frameId !== 0) return;
   if (!shouldGuard(details.url)) return;
   const matches = findMatchingRules(details.url, cachedRules);
   if (matches.length === 0) return;

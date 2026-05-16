@@ -17,6 +17,12 @@ export interface BlockRule {
 
 export interface StoredState {
   rules: BlockRule[];
+  /**
+   * Master switch. When false, no rules apply — neither DNR nor the SPA guard
+   * fire — but per-rule `enabled` state is preserved for when it flips back on.
+   * Optional for backward compatibility; absent is treated as true.
+   */
+  globalEnabled?: boolean;
   /** Schema version for forward-compatibility. */
   version: number;
 }

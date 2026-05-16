@@ -83,6 +83,60 @@ body {
   color: var(--muted);
 }
 
+/* Master switch */
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  cursor: pointer;
+  user-select: none;
+}
+.switch input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.switch-track {
+  position: relative;
+  width: 2.5rem;
+  height: 1.25rem;
+  background: var(--hairline);
+  border-radius: 999px;
+  transition: background 140ms;
+}
+.switch-track::after {
+  content: '';
+  position: absolute;
+  top: 0.125rem;
+  left: 0.125rem;
+  width: 1rem;
+  height: 1rem;
+  background: var(--bg);
+  border-radius: 50%;
+  transition: transform 140ms;
+}
+.switch input:checked ~ .switch-track {
+  background: var(--accent);
+}
+.switch input:checked ~ .switch-track::after {
+  transform: translateX(1.25rem);
+}
+.switch input:focus-visible ~ .switch-track {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.switch-label {
+  font-family: var(--sans);
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  min-width: 3.5rem;
+}
+.switch input:checked ~ .switch-label {
+  color: var(--accent);
+}
+
 /* Intro */
 .intro {
   margin: 2.5rem 0 2rem;

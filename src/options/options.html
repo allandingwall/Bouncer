@@ -11,7 +11,11 @@
     <main class="page">
       <header class="masthead">
         <span class="wordmark">Bouncer</span>
-        <span class="masthead-status">rules</span>
+        <label class="switch" title="Pause or resume all blocking">
+          <input type="checkbox" id="global-toggle" />
+          <span class="switch-track" aria-hidden="true"></span>
+          <span id="global-toggle-label" class="switch-label">active</span>
+        </label>
       </header>
 
       <section class="intro">
@@ -24,35 +28,29 @@
         <dl class="guide-grid">
           <dt>Domain</dt>
           <dd>
-            <p>Blocks the domain and every subdomain. The most common choice.</p>
+            <p>Blocks the domain and every subdomain.</p>
             <p class="guide-examples">
-              <code>reddit.com</code> blocks
-              <code>reddit.com</code>, <code>old.reddit.com</code>,
+              <code>reddit.com</code> blocks <code>reddit.com</code>, <code>old.reddit.com</code>,
               <code>www.reddit.com/r/anything</code>.
             </p>
           </dd>
 
           <dt>Exact URL</dt>
           <dd>
-            <p>Blocks one specific URL only. Use sparingly — even a trailing slash counts.</p>
+            <p>Blocks one specific URL only.</p>
             <p class="guide-examples">
-              <code>https://news.ycombinator.com/newest</code> blocks that page,
-              but <em>not</em>
+              <code>https://news.ycombinator.com/newest</code> blocks that page, but <em>not</em>
               <code>https://news.ycombinator.com/</code>.
             </p>
           </dd>
 
           <dt>Wildcard</dt>
           <dd>
-            <p>
-              A glob where <code>*</code> matches any sequence of characters. Useful when Domain
-              is too broad and Exact is too narrow.
-            </p>
+            <p>A glob where <code>*</code> matches any sequence of characters.</p>
             <p class="guide-examples">
               <code>reddit.com/r/*</code> blocks every subreddit (including
               <code>www.reddit.com</code>, <code>old.reddit.com</code>, etc.) but leaves the
-              homepage open. <code>*.twitter.com/*</code> blocks every Twitter URL on any
-              subdomain.
+              homepage open.
             </p>
           </dd>
         </dl>

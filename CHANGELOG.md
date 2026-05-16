@@ -18,3 +18,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rule helpers: `createRule`, `updateRule`, `validatePattern`, `isDuplicate`, `filterRules`, and JSON serialise/deserialise with tolerant import (skip malformed entries, count them). 26 unit tests.
 - Options page: full CRUD (add, edit-toggle, two-stage delete), substring search, JSON import (merge by `matchType::pattern` key, skip duplicates) and export. Surfaces a warning when the storage layer has fallen back to local.
 - Popup: quick-add for the active tab. Auto-suggests a pattern based on match type (`hostname` for domain, full URL for exact, `*.host/*` for wildcard) and switches when the user changes type. 5 unit tests for the suggestion logic.
+- Icon set generated from an SVG source (U+2613 ☓ SALTIRE in clay on kraft) via `@resvg/resvg-js`. Sizes 16/32/48/96/128, regenerable via `bun run icons`.

@@ -15,6 +15,7 @@ export default defineConfig({
       manifest: resolve(__dirname, 'src/manifest.json'),
       browser: 'firefox',
       additionalInputs: ['blocked/blocked.html'],
+      disableAutoLaunch: true,
     }),
   ],
 });

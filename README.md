@@ -39,7 +39,6 @@ bun run format       # Prettier
 bun run typecheck    # tsc --noEmit
 bun run test         # Vitest (96 tests)
 bun run test:watch   # Vitest watch
-bun run icons        # Regenerate icon PNGs from public/icon.svg
 ```
 
 Preview a single UI surface in a regular browser tab:
@@ -74,11 +73,6 @@ src/
     types.ts          BlockRule, MatchType
   manifest.json
 tests/                Vitest unit tests
-public/
-  icon.svg            source for the toolbar icons
-  icons/              generated PNGs (16/32/48/96/128)
-scripts/
-  generate-icons.ts   rasterises icon.svg via @resvg/resvg-js
 ```
 
 ## Design notes

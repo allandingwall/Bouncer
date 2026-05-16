@@ -9,13 +9,10 @@ import { normaliseDomain } from '../lib/matcher.js';
  * re-runs the JS matcher against stored rules to display the full list of
  * matching rules — DNR only needs to fire the redirect.
  *
- * Strategy per match type:
- *   - exact     → regexFilter anchored to the literal URL
- *   - domain    → requestDomains (native subdomain matching, fastest path)
- *   - wildcard  → regexFilter generated from the wildcard pattern
- *
- * Redirect target uses regexSubstitution so the original URL is preserved
- * as a query parameter for the block page to read.
+ * All match types compile to `regexFilter` so we can use `regexSubstitution`
+ * uniformly to carry the original URL into the redirect target. (DNR only
+ * allows regexSubstitution when the condition uses regexFilter — pairing it
+ * with `requestDomains` causes Firefox to silently reject the rule.)
  */
 
 const BLOCK_PAGE_PATH = 'blocked/blocked.html';
@@ -29,8 +26,7 @@ interface DNRRule {
     redirect: { regexSubstitution?: string; url?: string };
   };
   condition: {
-    regexFilter?: string;
-    requestDomains?: string[];
+    regexFilter: string;
     resourceTypes: browser.declarativeNetRequest.ResourceType[];
   };
 }
@@ -54,6 +50,17 @@ export function exactToRegexFilter(pattern: string): string {
   return `^${regexEscape(pattern)}/?$`;
 }
 
+/**
+ * Convert a domain (possibly with subdomains) to a DNR `regexFilter`.
+ * Matches `https?://[anything.]domain[:port][/anything]`.
+ */
+export function domainToRegexFilter(pattern: string): string {
+  const domain = normaliseDomain(pattern);
+  if (!domain) return '';
+  const escaped = regexEscape(domain);
+  return `^https?://(?:[^/]+\\.)?${escaped}(?::\\d+)?(?:/.*)?$`;
+}
+
 interface BuildOptions {
   blockPageUrl: string;
 }
@@ -66,51 +73,34 @@ export function buildDnrRules(rules: readonly BlockRule[], opts: BuildOptions): 
   for (const rule of rules) {
     if (!rule.enabled || !rule.pattern) continue;
 
-    const action: DNRRule['action'] = {
-      type: 'redirect',
-      redirect: {
-        regexSubstitution: `${opts.blockPageUrl}?url=\\0&rule=${encodeURIComponent(rule.id)}`,
-      },
-    };
-
+    let regexFilter: string;
     switch (rule.matchType) {
       case 'exact':
-        out.push({
-          id: id++,
-          priority: 1,
-          action,
-          condition: {
-            regexFilter: exactToRegexFilter(rule.pattern),
-            resourceTypes: RESOURCE_TYPES_MAIN_FRAME,
-          },
-        });
+        regexFilter = exactToRegexFilter(rule.pattern);
         break;
-      case 'domain': {
-        const domain = normaliseDomain(rule.pattern);
-        if (!domain) continue;
-        out.push({
-          id: id++,
-          priority: 1,
-          action,
-          condition: {
-            requestDomains: [domain],
-            resourceTypes: RESOURCE_TYPES_MAIN_FRAME,
-          },
-        });
+      case 'domain':
+        regexFilter = domainToRegexFilter(rule.pattern);
+        if (!regexFilter) continue;
         break;
-      }
       case 'wildcard':
-        out.push({
-          id: id++,
-          priority: 1,
-          action,
-          condition: {
-            regexFilter: wildcardToRegexFilter(rule.pattern),
-            resourceTypes: RESOURCE_TYPES_MAIN_FRAME,
-          },
-        });
+        regexFilter = wildcardToRegexFilter(rule.pattern);
         break;
     }
+
+    out.push({
+      id: id++,
+      priority: 1,
+      action: {
+        type: 'redirect',
+        redirect: {
+          regexSubstitution: `${opts.blockPageUrl}?url=\\0&rule=${encodeURIComponent(rule.id)}`,
+        },
+      },
+      condition: {
+        regexFilter,
+        resourceTypes: RESOURCE_TYPES_MAIN_FRAME,
+      },
+    });
   }
 
   return out;

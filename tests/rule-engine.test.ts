@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildDnrRules,
+  domainToRegexFilter,
   exactToRegexFilter,
   wildcardToRegexFilter,
 } from '../src/background/rule-engine.js';
@@ -47,6 +48,43 @@ describe('wildcardToRegexFilter', () => {
   });
 });
 
+describe('domainToRegexFilter', () => {
+  it('matches the bare domain', () => {
+    const re = new RegExp(domainToRegexFilter('reddit.com'));
+    expect(re.test('https://reddit.com')).toBe(true);
+    expect(re.test('https://reddit.com/r/cats')).toBe(true);
+  });
+
+  it('matches subdomains', () => {
+    const re = new RegExp(domainToRegexFilter('reddit.com'));
+    expect(re.test('https://old.reddit.com/r/foo')).toBe(true);
+    expect(re.test('https://a.b.reddit.com')).toBe(true);
+  });
+
+  it('matches both http and https', () => {
+    const re = new RegExp(domainToRegexFilter('reddit.com'));
+    expect(re.test('http://reddit.com')).toBe(true);
+    expect(re.test('ftp://reddit.com')).toBe(false);
+  });
+
+  it('rejects suffix-attack hosts', () => {
+    const re = new RegExp(domainToRegexFilter('reddit.com'));
+    expect(re.test('https://evilreddit.com')).toBe(false);
+    expect(re.test('https://reddit.com.evil.com')).toBe(false);
+  });
+
+  it('tolerates a port', () => {
+    const re = new RegExp(domainToRegexFilter('reddit.com'));
+    expect(re.test('https://reddit.com:8443/x')).toBe(true);
+  });
+
+  it('normalises scheme/path/www out of the pattern', () => {
+    expect(domainToRegexFilter('https://www.Reddit.com/path')).toBe(
+      '^https?://(?:[^/]+\\.)?reddit\\.com(?::\\d+)?(?:/.*)?$',
+    );
+  });
+});
+
 describe('buildDnrRules', () => {
   it('skips disabled rules and empty patterns', () => {
     const result = buildDnrRules(
@@ -59,19 +97,11 @@ describe('buildDnrRules', () => {
     expect(result).toEqual([]);
   });
 
-  it('produces requestDomains for domain rules', () => {
+  it('produces regexFilter for domain rules (not requestDomains)', () => {
     const [r] = buildDnrRules([rule({ pattern: 'reddit.com', matchType: 'domain' })], OPTS);
-    expect(r!.condition.requestDomains).toEqual(['reddit.com']);
+    expect(r!.condition.regexFilter).toBe('^https?://(?:[^/]+\\.)?reddit\\.com(?::\\d+)?(?:/.*)?$');
     expect(r!.condition.resourceTypes).toEqual(['main_frame']);
     expect(r!.action.type).toBe('redirect');
-  });
-
-  it('normalises domain patterns before emitting them', () => {
-    const [r] = buildDnrRules(
-      [rule({ pattern: 'https://www.Reddit.com/path', matchType: 'domain' })],
-      OPTS,
-    );
-    expect(r!.condition.requestDomains).toEqual(['reddit.com']);
   });
 
   it('produces regexFilter for wildcard rules', () => {
@@ -85,6 +115,21 @@ describe('buildDnrRules', () => {
       OPTS,
     );
     expect(r!.condition.regexFilter).toBe('^https://example\\.com/foo/?$');
+  });
+
+  it('always emits regexSubstitution (never paired with requestDomains)', () => {
+    const result = buildDnrRules(
+      [
+        rule({ pattern: 'reddit.com', matchType: 'domain' }),
+        rule({ pattern: '*.twitter.com/*', matchType: 'wildcard' }),
+        rule({ pattern: 'https://x.com/y', matchType: 'exact' }),
+      ],
+      OPTS,
+    );
+    for (const r of result) {
+      expect(r.condition.regexFilter).toBeTruthy();
+      expect(r.action.redirect.regexSubstitution).toBeTruthy();
+    }
   });
 
   it('embeds the block page URL and rule id in the redirect substitution', () => {

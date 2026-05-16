@@ -1,6 +1,7 @@
 import { findMatchingRules, matchTypeLabel } from '../lib/matcher.js';
 import { loadRules } from '../lib/storage.js';
 import type { BlockRule } from '../lib/types.js';
+import { readOriginalUrlFrom } from './url.js';
 
 /**
  * Block-page bootstrap.
@@ -16,12 +17,7 @@ import type { BlockRule } from '../lib/types.js';
  */
 
 function readOriginalUrl(): string | null {
-  const hash = window.location.hash;
-  if (hash.length > 1) return hash.slice(1);
-  // Backwards-compat for any in-flight redirect produced by the old
-  // ?url=... scheme during a build that straddles this change.
-  const url = new URLSearchParams(window.location.search).get('url');
-  return url ? url : null;
+  return readOriginalUrlFrom(window.location);
 }
 
 function setText(selector: string, text: string): void {

@@ -10,3 +10,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Project scaffold: Vite, TypeScript (strict), ESLint, Prettier, Vitest, web-ext.
+- `BlockRule` types and a pure URL matcher supporting exact, domain, and wildcard match types, with 40 unit tests.

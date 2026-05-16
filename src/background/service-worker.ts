@@ -57,7 +57,9 @@ void syncFromStorage();
  * replaceState transitions inside a tab that DNR cannot see.
  */
 function buildBlockUrl(originalUrl: string): string {
-  return `${browser.runtime.getURL(BLOCK_PAGE_PATH)}?url=${encodeURIComponent(originalUrl)}`;
+  // Same fragment-based encoding as the DNR substitution — fragments are
+  // opaque so `&`, `?`, `#` inside the original URL round-trip intact.
+  return `${browser.runtime.getURL(BLOCK_PAGE_PATH)}#${originalUrl}`;
 }
 
 function shouldGuard(url: string): boolean {

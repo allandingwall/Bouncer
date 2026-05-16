@@ -91,7 +91,10 @@ export function buildDnrRules(rules: readonly BlockRule[], opts: BuildOptions): 
       action: {
         type: 'redirect',
         redirect: {
-          regexSubstitution: `${opts.blockPageUrl}?url=\\0`,
+          // Carry the matched URL through the fragment, not the query string.
+          // Fragments are opaque to URL parsers, so `&`, `?`, `#`, and `=`
+          // inside the original URL all round-trip intact.
+          regexSubstitution: `${opts.blockPageUrl}#\\0`,
         },
       },
       condition: {

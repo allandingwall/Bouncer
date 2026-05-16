@@ -146,10 +146,21 @@ describe('buildDnrRules', () => {
       [rule({ id: 'r-1', pattern: 'reddit.com', matchType: 'domain' })],
       OPTS,
     );
-    expect(r!.action.redirect.regexSubstitution).toContain(
-      'moz-extension://abc/blocked/blocked.html',
+    expect(r!.action.redirect.regexSubstitution).toBe(
+      'moz-extension://abc/blocked/blocked.html#\\0',
     );
-    expect(r!.action.redirect.regexSubstitution).toContain('url=\\0');
+  });
+
+  // Regression: a URL containing `&` used to be truncated by the block page
+  // when the substitution put it in the query string. With the URL in the
+  // fragment, the whole string round-trips through URL parsing.
+  it('the matched URL survives a fragment round-trip even with & in it', () => {
+    const [r] = buildDnrRules([rule({ pattern: 'reddit.com', matchType: 'domain' })], OPTS);
+    const sub = r!.action.redirect.regexSubstitution!;
+    const matched = 'https://reddit.com/r/foo?a=1&b=2&c=3';
+    const final = sub.replace(/\\0/g, matched);
+    const recovered = new URL(final).hash.slice(1);
+    expect(recovered).toBe(matched);
   });
 
   it('assigns unique sequential IDs', () => {

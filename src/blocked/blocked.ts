@@ -5,18 +5,23 @@ import type { BlockRule } from '../lib/types.js';
 /**
  * Block-page bootstrap.
  *
- * Reads the original URL from the redirect's query params, loads stored
- * rules, and renders every rule that matches — not just the one DNR happened
- * to fire on. The fragment of the original URL was carried through to the
- * block page's fragment (a quirk of redirect substitution), so we reattach it.
+ * Reads the original URL from the redirect's fragment, loads stored rules,
+ * and renders every rule that matches — not just the one DNR happened to
+ * fire on.
+ *
+ * The original URL is carried through `location.hash` because fragments are
+ * opaque to URL parsers: `&`, `?`, `=`, and `#` inside the original URL all
+ * survive intact. (The earlier `?url=` query-param scheme truncated URLs
+ * that contained `&`.)
  */
 
 function readOriginalUrl(): string | null {
-  const params = new URLSearchParams(window.location.search);
-  const url = params.get('url');
-  if (!url) return null;
   const hash = window.location.hash;
-  return hash ? url + hash : url;
+  if (hash.length > 1) return hash.slice(1);
+  // Backwards-compat for any in-flight redirect produced by the old
+  // ?url=... scheme during a build that straddles this change.
+  const url = new URLSearchParams(window.location.search).get('url');
+  return url ? url : null;
 }
 
 function setText(selector: string, text: string): void {

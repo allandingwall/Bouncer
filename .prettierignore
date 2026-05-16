@@ -1,0 +1,6 @@
+dist/
+node_modules/
+coverage/
+.web-ext-artifacts/
+*.min.js
+*.min.css

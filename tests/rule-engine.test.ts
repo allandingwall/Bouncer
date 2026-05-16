@@ -109,6 +109,15 @@ describe('buildDnrRules', () => {
     expect(r!.condition.regexFilter).toBe('^https?://.*\\.reddit\\.com/r/.*$');
   });
 
+  it('auto-allows subdomain prefix for wildcard rules with a literal host', () => {
+    const [r] = buildDnrRules([rule({ pattern: 'reddit.com/r/*', matchType: 'wildcard' })], OPTS);
+    expect(r!.condition.regexFilter).toBe('^https?://(?:[^/]+\\.)?reddit\\.com/r/.*$');
+    const re = new RegExp(r!.condition.regexFilter);
+    expect(re.test('https://www.reddit.com/r/melbourne/')).toBe(true);
+    expect(re.test('https://reddit.com/r/cats')).toBe(true);
+    expect(re.test('https://reddit.com/u/cats')).toBe(false);
+  });
+
   it('produces regexFilter for exact rules', () => {
     const [r] = buildDnrRules(
       [rule({ pattern: 'https://example.com/foo', matchType: 'exact' })],

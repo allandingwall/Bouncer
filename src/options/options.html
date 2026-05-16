@@ -49,8 +49,10 @@
               is too broad and Exact is too narrow.
             </p>
             <p class="guide-examples">
-              <code>*.twitter.com/*</code> blocks every Twitter URL on any subdomain.
-              <code>reddit.com/r/*</code> blocks every subreddit but leaves the homepage open.
+              <code>reddit.com/r/*</code> blocks every subreddit (including
+              <code>www.reddit.com</code>, <code>old.reddit.com</code>, etc.) but leaves the
+              homepage open. <code>*.twitter.com/*</code> blocks every Twitter URL on any
+              subdomain.
             </p>
           </dd>
         </dl>

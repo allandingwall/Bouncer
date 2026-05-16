@@ -45,9 +45,43 @@ export function isSameOrSubdomain(host: string, domain: string): boolean {
 
 /** Convert a wildcard pattern (`*` = any chars) into an anchored RegExp. */
 export function wildcardToRegExp(pattern: string): RegExp {
-  // Escape regex metacharacters except `*`, then turn `*` into `.*`.
-  const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*');
-  return new RegExp(`^${escaped}$`, 'i');
+  return new RegExp(`^${compileWildcardBody(pattern)}$`, 'i');
+}
+
+/**
+ * Compile a wildcard pattern to a regex body (no anchors).
+ *
+ * Semantics: `*` matches any sequence of characters. When the host portion of
+ * a scheme-less pattern is a literal domain (no `*`, has at least one `.`),
+ * an optional subdomain prefix is allowed implicitly — so `reddit.com/r/*`
+ * also matches `www.reddit.com/r/...` the way users intuitively expect.
+ * Patterns that start with `*` are taken as the author already being explicit.
+ */
+export function compileWildcardBody(pattern: string): string {
+  const hasScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(pattern);
+
+  let prefix = '';
+  let rest = pattern;
+  if (hasScheme) {
+    const cut = pattern.indexOf('://') + 3;
+    prefix = pattern.slice(0, cut);
+    rest = pattern.slice(cut);
+  }
+
+  const slashIdx = rest.indexOf('/');
+  const host = slashIdx === -1 ? rest : rest.slice(0, slashIdx);
+  const path = slashIdx === -1 ? '' : rest.slice(slashIdx);
+
+  const hostIsLiteralDomain = !host.includes('*') && host.includes('.');
+  const hostSegment = hostIsLiteralDomain
+    ? `(?:[^/]+\\.)?${compileSegment(host)}`
+    : compileSegment(host);
+
+  return `${compileSegment(prefix)}${hostSegment}${compileSegment(path)}`;
+}
+
+function compileSegment(s: string): string {
+  return s.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*');
 }
 
 /** True if a given URL is matched by a single rule's pattern + matchType. */

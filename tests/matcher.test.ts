@@ -213,6 +213,25 @@ describe('ruleMatches — wildcard', () => {
     const r = rule({ pattern: '*.reddit.com/*', matchType: 'wildcard' });
     expect(ruleMatches('https://OLD.REDDIT.COM/r/X', r)).toBe(true);
   });
+
+  it('auto-allows subdomain prefix when the host is a literal domain', () => {
+    const r = rule({ pattern: 'reddit.com/r/*', matchType: 'wildcard' });
+    expect(ruleMatches('https://reddit.com/r/cats', r)).toBe(true);
+    expect(ruleMatches('https://www.reddit.com/r/melbourne/', r)).toBe(true);
+    expect(ruleMatches('https://old.reddit.com/r/foo/bar', r)).toBe(true);
+  });
+
+  it('still rejects unrelated paths under the auto-subdomain rule', () => {
+    const r = rule({ pattern: 'reddit.com/r/*', matchType: 'wildcard' });
+    expect(ruleMatches('https://reddit.com/u/cats', r)).toBe(false);
+    expect(ruleMatches('https://www.reddit.com/u/cats', r)).toBe(false);
+  });
+
+  it('does not auto-prefix when the user wrote * in the host', () => {
+    const r = rule({ pattern: '*.reddit.com/*', matchType: 'wildcard' });
+    // bare reddit.com (no leading subdomain) does NOT match a `*.` prefix
+    expect(ruleMatches('https://reddit.com/r/cats', r)).toBe(false);
+  });
 });
 
 describe('ruleMatches — disabled rules', () => {

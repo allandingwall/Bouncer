@@ -1,5 +1,5 @@
 import type { BlockRule } from '../lib/types.js';
-import { normaliseDomain } from '../lib/matcher.js';
+import { compileWildcardBody, normaliseDomain } from '../lib/matcher.js';
 
 /**
  * Translate BlockRule[] into declarativeNetRequest dynamic rules and apply them.
@@ -38,10 +38,8 @@ function regexEscape(s: string): string {
 
 /** Convert a user wildcard pattern to a DNR `regexFilter`. */
 export function wildcardToRegexFilter(pattern: string): string {
-  // Same semantics as the runtime matcher: `*` → `.*`, all else literal.
-  // Allow either http(s) prefix when the pattern has no scheme.
   const hasScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(pattern);
-  const body = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*');
+  const body = compileWildcardBody(pattern);
   return hasScheme ? `^${body}$` : `^https?://${body}$`;
 }
 

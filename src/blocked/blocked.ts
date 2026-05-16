@@ -1,6 +1,7 @@
 import { findMatchingRules, matchTypeLabel } from '../lib/matcher.js';
 import { loadRules } from '../lib/storage.js';
 import type { BlockRule } from '../lib/types.js';
+import { pickMessage } from './messages.js';
 import { readOriginalUrlFrom } from './url.js';
 
 /**
@@ -82,6 +83,12 @@ function makeNote(text: string): HTMLElement {
 }
 
 async function init(): Promise<void> {
+  // Rotate the headline + lede on each load. The HTML carries fallback
+  // copy so the no-JS path still reads coherently if this code never runs.
+  const message = pickMessage();
+  setText('#headline', message.headline);
+  setText('.lede', message.lede);
+
   const url = readOriginalUrl();
   if (url) {
     setText('#blocked-url', url);

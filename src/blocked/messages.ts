@@ -23,9 +23,7 @@ export const BLOCK_MESSAGES: readonly BlockMessage[] = [
   { headline: 'Not right now.', lede: 'You asked me to keep this one closed.' },
 
   // Calm / reflective.
-  { headline: 'Closed for now.', lede: 'Past-you decided this could wait.' },
-  { headline: 'Not today.', lede: 'You set this site aside.' },
-  { headline: 'Held back.', lede: 'You asked Bouncer to keep this away.' },
+  { headline: 'Blocked.', lede: 'You asked Bouncer to keep this away.' },
   { headline: 'Not this one.', lede: 'You blocked this site for a reason.' },
 
   // Firmer, still kind.
@@ -36,7 +34,7 @@ export const BLOCK_MESSAGES: readonly BlockMessage[] = [
   { headline: 'Access denied.', lede: 'This one is on your blocklist.' },
 
   // Encouraging.
-  { headline: 'Stay focused.', lede: 'You set this site aside for later.' },
+  { headline: 'Stay focused.', lede: 'This website is blocked.' },
 ];
 
 /**

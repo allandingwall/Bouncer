@@ -2,9 +2,11 @@ import {
   createRule,
   deserializeRules,
   filterRules,
+  groupsOf,
   isDuplicate,
   serializeRules,
   updateRule,
+  validateGroup,
   validatePattern,
 } from '../lib/rules.js';
 import { loadState, saveGlobalEnabled, saveRules } from '../lib/storage.js';
@@ -31,6 +33,8 @@ interface State {
   pendingDeleteId: string | null;
   /** Pending two-stage "delete all" confirmation. */
   pendingClearAll: boolean;
+  /** Pending two-stage "delete group" confirmation: name of the group, or null. */
+  pendingDeleteGroup: string | null;
 }
 
 const state: State = {
@@ -38,6 +42,7 @@ const state: State = {
   query: '',
   pendingDeleteId: null,
   pendingClearAll: false,
+  pendingDeleteGroup: null,
 };
 
 /** Auto-cancel a pending two-stage confirmation after this many ms of inaction. */
@@ -105,14 +110,22 @@ function onSubmitAdd(e: Event): void {
   const pattern = $<HTMLInputElement>('#add-pattern').value;
   const matchType = $<HTMLSelectElement>('#add-type').value as MatchType;
   const note = $<HTMLInputElement>('#add-note').value;
+  const group = $<HTMLInputElement>('#add-group').value;
 
   const validation = validatePattern(pattern, matchType);
   if (!validation.valid) {
     showAddError(validation.message ?? 'Invalid pattern.');
     return;
   }
+  if (group.trim()) {
+    const groupValidation = validateGroup(group);
+    if (!groupValidation.valid) {
+      showAddError(groupValidation.message ?? 'Invalid group name.');
+      return;
+    }
+  }
 
-  const rule = createRule({ pattern, matchType, note });
+  const rule = createRule({ pattern, matchType, note, group });
   if (state.rules.some((r) => isDuplicate(r, rule))) {
     showAddError('A rule with this pattern and type already exists.');
     return;
@@ -127,6 +140,8 @@ function onSubmitAdd(e: Event): void {
 function clearAddForm(): void {
   $<HTMLInputElement>('#add-pattern').value = '';
   $<HTMLInputElement>('#add-note').value = '';
+  // Intentionally leave the group field populated — typical flow is "add a
+  // few rules in the same group", so preserving it cuts re-typing.
   $<HTMLInputElement>('#add-pattern').focus();
 }
 
@@ -243,8 +258,20 @@ function renderClearAll(): void {
 
 function render(): void {
   renderStorageNote();
+  renderGroupsDatalist();
   renderList();
   renderClearAll();
+}
+
+function renderGroupsDatalist(): void {
+  const list = $<HTMLDataListElement>('#add-groups-list');
+  list.replaceChildren();
+  for (const group of groupsOf(state.rules)) {
+    if (group === null) continue;
+    const opt = document.createElement('option');
+    opt.value = group;
+    list.append(opt);
+  }
 }
 
 function renderStorageNote(): void {
@@ -259,12 +286,12 @@ function renderStorageNote(): void {
 }
 
 function renderList(): void {
-  const list = $<HTMLUListElement>('#rules');
+  const container = $<HTMLDivElement>('#rules');
   const empty = $<HTMLParagraphElement>('#empty');
   const count = $<HTMLSpanElement>('#rule-count');
   const visible = filterRules(state.rules, state.query);
 
-  list.replaceChildren();
+  container.replaceChildren();
 
   count.textContent = formatCount(
     state.rules.length,
@@ -284,7 +311,77 @@ function renderList(): void {
   }
   empty.hidden = true;
 
-  for (const rule of visible) list.append(renderRule(rule));
+  // Section per group. Group set is computed over the *visible* rules so
+  // an empty filter result doesn't leave an empty section behind.
+  for (const group of groupsOf(visible)) {
+    const rulesInGroup = visible.filter((r) => (r.group ?? null) === group);
+    container.append(renderGroupSection(group, rulesInGroup));
+  }
+}
+
+function renderGroupSection(group: string | null, rules: BlockRule[]): HTMLElement {
+  const section = document.createElement('section');
+  section.className = 'rule-group';
+  if (group !== null) section.dataset.group = group;
+
+  const header = document.createElement('header');
+  header.className = 'rule-group-header';
+
+  const title = document.createElement('h3');
+  title.className = 'rule-group-title' + (group === null ? ' ungrouped' : '');
+  title.textContent = group === null ? 'Ungrouped' : group;
+
+  const countLabel = document.createElement('span');
+  countLabel.className = 'rule-group-count';
+  countLabel.textContent = `${rules.length} rule${rules.length === 1 ? '' : 's'}`;
+
+  header.append(title, countLabel);
+
+  // "Delete group" only makes sense for named groups — there's no
+  // ungrouped "thing" to delete; users should clear individual rules.
+  if (group !== null) {
+    header.append(renderDeleteGroupButton(group));
+  }
+
+  section.append(header);
+
+  const list = document.createElement('ul');
+  list.className = 'rule-group-list';
+  for (const rule of rules) list.append(renderRule(rule));
+  section.append(list);
+
+  return section;
+}
+
+function renderDeleteGroupButton(group: string): HTMLButtonElement {
+  // Acts on the full group (not the filtered subset) — same conventions
+  // as the existing "Delete all rules" button.
+  const totalInGroup = state.rules.filter((r) => r.group === group).length;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'rule-group-delete';
+  const isConfirming = state.pendingDeleteGroup === group;
+  btn.textContent = isConfirming
+    ? `Really? Delete ${totalInGroup} rule${totalInGroup === 1 ? '' : 's'}`
+    : 'Delete group';
+  if (isConfirming) btn.classList.add('confirming');
+  btn.addEventListener('click', () => {
+    if (state.pendingDeleteGroup === group) {
+      state.pendingDeleteGroup = null;
+      state.rules = state.rules.filter((r) => r.group !== group);
+      void persist();
+      return;
+    }
+    state.pendingDeleteGroup = group;
+    render();
+    window.setTimeout(() => {
+      if (state.pendingDeleteGroup === group) {
+        state.pendingDeleteGroup = null;
+        render();
+      }
+    }, CONFIRM_TIMEOUT_MS);
+  });
+  return btn;
 }
 
 function formatCount(total: number, visible: number, filtered: boolean): string {
@@ -313,10 +410,91 @@ function renderRule(rule: BlockRule): HTMLLIElement {
 
   const actions = document.createElement('div');
   actions.className = 'rule-actions';
-  actions.append(buildToggleButton(rule), buildDeleteButton(rule));
+  actions.append(buildMoveSelect(rule), buildToggleButton(rule), buildDeleteButton(rule));
 
   li.append(pattern, meta, actions);
   return li;
+}
+
+/**
+ * Inline `<select>` for moving a rule between groups. Lists every existing
+ * group plus an "Ungrouped" option and a sentinel "+ New group…" that
+ * window.prompts for a name. Commits on change.
+ */
+function buildMoveSelect(rule: BlockRule): HTMLSelectElement {
+  const select = document.createElement('select');
+  select.className = 'rule-move';
+  select.setAttribute('aria-label', `Move rule '${rule.pattern}' to group`);
+
+  const groupNames = groupsOf(state.rules).filter((g): g is string => g !== null);
+
+  const ungrouped = document.createElement('option');
+  ungrouped.value = '';
+  ungrouped.textContent = '(Ungrouped)';
+  if (!rule.group) ungrouped.selected = true;
+  select.append(ungrouped);
+
+  for (const g of groupNames) {
+    const opt = document.createElement('option');
+    opt.value = g;
+    opt.textContent = g;
+    if (rule.group === g) opt.selected = true;
+    select.append(opt);
+  }
+
+  if (groupNames.length > 0) {
+    const sep = document.createElement('option');
+    sep.disabled = true;
+    sep.textContent = '──────';
+    select.append(sep);
+  }
+
+  const newOpt = document.createElement('option');
+  newOpt.value = MOVE_NEW_GROUP_SENTINEL;
+  newOpt.textContent = '+ New group…';
+  select.append(newOpt);
+
+  select.addEventListener('change', () => onMoveSelectChange(rule, select));
+  return select;
+}
+
+const MOVE_NEW_GROUP_SENTINEL = '__bouncer_new_group__';
+
+function onMoveSelectChange(rule: BlockRule, select: HTMLSelectElement): void {
+  const value = select.value;
+
+  if (value === MOVE_NEW_GROUP_SENTINEL) {
+    const raw = window.prompt('New group name', rule.group ?? '');
+    // Cancelled — revert the select to whatever it was showing.
+    if (raw === null) {
+      select.value = rule.group ?? '';
+      return;
+    }
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      select.value = rule.group ?? '';
+      return;
+    }
+    const v = validateGroup(trimmed);
+    if (!v.valid) {
+      window.alert(v.message ?? 'Invalid group name.');
+      select.value = rule.group ?? '';
+      return;
+    }
+    applyRuleGroup(rule, trimmed);
+    return;
+  }
+
+  applyRuleGroup(rule, value);
+}
+
+/** Set or clear a rule's group, then persist + re-render. */
+function applyRuleGroup(rule: BlockRule, newGroup: string): void {
+  const idx = state.rules.findIndex((r) => r.id === rule.id);
+  if (idx < 0) return;
+  // `updateRule({ group: '' })` clears the field; non-empty sets it.
+  state.rules[idx] = updateRule(rule, { group: newGroup });
+  void persist();
 }
 
 function textNode(s: string): Text {

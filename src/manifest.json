@@ -11,7 +11,7 @@
       "strict_min_version": "121.0"
     }
   },
-  "permissions": ["storage", "tabs", "declarativeNetRequest", "webNavigation"],
+  "permissions": ["storage", "declarativeNetRequest", "webNavigation"],
   "host_permissions": ["*://*/*"],
   "background": {
     "scripts": ["background/service-worker.ts"]

@@ -4,6 +4,9 @@ import {
   deserializeRules,
   filterRules,
   isDuplicate,
+  MAX_NOTE_LENGTH,
+  MAX_PATTERN_LENGTH,
+  MAX_WILDCARD_STARS,
   serializeRules,
   updateRule,
   validatePattern,
@@ -77,6 +80,26 @@ describe('validatePattern', () => {
       expect(validatePattern('*', 'wildcard').valid).toBe(false);
       expect(validatePattern('*.*', 'wildcard').valid).toBe(false);
     });
+
+    it('rejects too many wildcards (ReDoS guard)', () => {
+      const tooMany = 'a' + '*'.repeat(MAX_WILDCARD_STARS + 1) + '.com/*';
+      expect(validatePattern(tooMany, 'wildcard').valid).toBe(false);
+    });
+  });
+
+  describe('length bounds', () => {
+    it('rejects patterns longer than the cap', () => {
+      const tooLong = 'https://example.com/' + 'a'.repeat(MAX_PATTERN_LENGTH);
+      expect(validatePattern(tooLong, 'exact').valid).toBe(false);
+    });
+  });
+});
+
+describe('note length', () => {
+  it('clips notes longer than the cap on create', () => {
+    const note = 'x'.repeat(MAX_NOTE_LENGTH + 50);
+    const r = createRule({ pattern: 'reddit.com', matchType: 'domain', note });
+    expect(r.note?.length).toBe(MAX_NOTE_LENGTH);
   });
 });
 

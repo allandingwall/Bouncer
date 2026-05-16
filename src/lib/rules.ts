@@ -14,9 +14,30 @@ export interface ValidationResult {
   message?: string;
 }
 
+/**
+ * Hard upper bound on pattern length. Generous enough for any realistic URL
+ * (RFC 7230 doesn't define one; 2 KiB covers > 99% of in-the-wild URLs and
+ * keeps wildcard regex compilation cost bounded).
+ */
+export const MAX_PATTERN_LENGTH = 2048;
+
+/** Upper bound on the user-supplied note text. */
+export const MAX_NOTE_LENGTH = 500;
+
+/**
+ * Cap on `*` count in a wildcard pattern. Each `*` becomes a `.*` in the
+ * compiled regex; many adjacent `.*` segments enable catastrophic
+ * backtracking against a malicious URL. The matcher never needs more than a
+ * handful of these in practice.
+ */
+export const MAX_WILDCARD_STARS = 16;
+
 export function validatePattern(pattern: string, matchType: MatchType): ValidationResult {
   const trimmed = pattern.trim();
   if (!trimmed) return { valid: false, message: 'Pattern is required.' };
+  if (trimmed.length > MAX_PATTERN_LENGTH) {
+    return { valid: false, message: `Pattern is too long (max ${MAX_PATTERN_LENGTH} chars).` };
+  }
   if (/\s/.test(trimmed)) return { valid: false, message: 'Pattern cannot contain whitespace.' };
 
   switch (matchType) {
@@ -47,14 +68,22 @@ export function validatePattern(pattern: string, matchType: MatchType): Validati
       return { valid: true };
     }
 
-    case 'wildcard':
+    case 'wildcard': {
       if (!trimmed.includes('*')) {
         return { valid: false, message: 'Wildcard pattern must contain at least one "*".' };
       }
       if (trimmed === '*' || trimmed === '*.*' || trimmed === '*/*') {
         return { valid: false, message: 'Pattern is too broad — would block everything.' };
       }
+      const stars = (trimmed.match(/\*/g) ?? []).length;
+      if (stars > MAX_WILDCARD_STARS) {
+        return {
+          valid: false,
+          message: `Too many wildcards (max ${MAX_WILDCARD_STARS}).`,
+        };
+      }
       return { valid: true };
+    }
   }
 }
 
@@ -81,8 +110,12 @@ export function createRule(input: CreateRuleInput): BlockRule {
     enabled: input.enabled ?? true,
     createdAt: Date.now(),
   };
-  if (input.note && input.note.trim()) rule.note = input.note.trim();
+  if (input.note && input.note.trim()) rule.note = clipNote(input.note.trim());
   return rule;
+}
+
+function clipNote(note: string): string {
+  return note.length > MAX_NOTE_LENGTH ? note.slice(0, MAX_NOTE_LENGTH) : note;
 }
 
 export function updateRule(
@@ -95,7 +128,7 @@ export function updateRule(
   if (patch.enabled !== undefined) next.enabled = patch.enabled;
   if (patch.note !== undefined) {
     const n = patch.note.trim();
-    if (n) next.note = n;
+    if (n) next.note = clipNote(n);
     else delete next.note;
   }
   return next;
@@ -156,13 +189,17 @@ function parseRule(input: unknown): BlockRule | null {
   if (!pattern) return null;
   if (matchType !== 'exact' && matchType !== 'domain' && matchType !== 'wildcard') return null;
 
+  // Reject imports that exceed the same bounds we enforce on UI input.
+  // This also guards the matcher against pathological wildcards.
+  if (!validatePattern(pattern, matchType).valid) return null;
+
   const enabled = typeof r.enabled === 'boolean' ? r.enabled : true;
   const createdAt =
     typeof r.createdAt === 'number' && Number.isFinite(r.createdAt) ? r.createdAt : Date.now();
   const id = typeof r.id === 'string' && r.id ? r.id : generateId();
 
   const rule: BlockRule = { id, pattern, matchType, enabled, createdAt };
-  if (typeof r.note === 'string' && r.note.trim()) rule.note = r.note.trim();
+  if (typeof r.note === 'string' && r.note.trim()) rule.note = clipNote(r.note.trim());
   return rule;
 }
 

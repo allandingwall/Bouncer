@@ -38,8 +38,15 @@ async function init(): Promise<void> {
 
   $<HTMLAnchorElement>('#open-options').addEventListener('click', (e) => {
     e.preventDefault();
-    void browser.runtime.openOptionsPage();
-    window.close();
+    void (async (): Promise<void> => {
+      try {
+        await browser.runtime.openOptionsPage();
+      } catch {
+        // Fall back to opening the options page as a tab if the API rejects.
+        await browser.tabs.create({ url: browser.runtime.getURL('options/options.html') });
+      }
+      window.close();
+    })();
   });
 
   // Disable the form if we have no URL to work from.

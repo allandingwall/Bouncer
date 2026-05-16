@@ -96,6 +96,22 @@ async function init(): Promise<void> {
 
   const matches = url ? findMatchingRules(url, rules) : [];
   renderRules(matches);
+
+  const link = document.getElementById('open-options');
+  if (link) {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      void openOptions();
+    });
+  }
+}
+
+async function openOptions(): Promise<void> {
+  try {
+    await browser.runtime.openOptionsPage();
+  } catch {
+    await browser.tabs.create({ url: browser.runtime.getURL('options/options.html') });
+  }
 }
 
 function safeHostname(url: string): string {

@@ -91,7 +91,7 @@ export function buildDnrRules(rules: readonly BlockRule[], opts: BuildOptions): 
       action: {
         type: 'redirect',
         redirect: {
-          regexSubstitution: `${opts.blockPageUrl}?url=\\0&rule=${encodeURIComponent(rule.id)}`,
+          regexSubstitution: `${opts.blockPageUrl}?url=\\0`,
         },
       },
       condition: {

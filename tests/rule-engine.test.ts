@@ -141,7 +141,7 @@ describe('buildDnrRules', () => {
     }
   });
 
-  it('embeds the block page URL and rule id in the redirect substitution', () => {
+  it('embeds the block page URL and the matched URL in the redirect substitution', () => {
     const [r] = buildDnrRules(
       [rule({ id: 'r-1', pattern: 'reddit.com', matchType: 'domain' })],
       OPTS,
@@ -150,7 +150,6 @@ describe('buildDnrRules', () => {
       'moz-extension://abc/blocked/blocked.html',
     );
     expect(r!.action.redirect.regexSubstitution).toContain('url=\\0');
-    expect(r!.action.redirect.regexSubstitution).toContain('rule=r-1');
   });
 
   it('assigns unique sequential IDs', () => {

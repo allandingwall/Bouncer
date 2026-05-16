@@ -34,6 +34,15 @@ describe('validatePattern', () => {
     it('rejects a bare domain', () => {
       expect(validatePattern('example.com', 'exact').valid).toBe(false);
     });
+
+    it('rejects non-http(s) schemes', () => {
+      // These all parse as URLs but never match real navigations and should
+      // not be storable even as inert data.
+      expect(validatePattern('javascript:alert(1)', 'exact').valid).toBe(false);
+      expect(validatePattern('data:text/html,<script>x</script>', 'exact').valid).toBe(false);
+      expect(validatePattern('file:///etc/passwd', 'exact').valid).toBe(false);
+      expect(validatePattern('chrome://settings', 'exact').valid).toBe(false);
+    });
   });
 
   describe('domain', () => {

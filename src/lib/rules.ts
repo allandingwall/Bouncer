@@ -20,10 +20,22 @@ export function validatePattern(pattern: string, matchType: MatchType): Validati
   if (/\s/.test(trimmed)) return { valid: false, message: 'Pattern cannot contain whitespace.' };
 
   switch (matchType) {
-    case 'exact':
-      return URL.canParse(trimmed)
-        ? { valid: true }
-        : { valid: false, message: 'Must be a full URL (e.g. https://example.com/path).' };
+    case 'exact': {
+      let parsed: URL;
+      try {
+        parsed = new URL(trimmed);
+      } catch {
+        return { valid: false, message: 'Must be a full URL (e.g. https://example.com/path).' };
+      }
+      // Only allow http(s). DNR only fires on real navigations (which are
+      // always http(s)), so other schemes can never match — they'd be dead
+      // rules at best, and a `javascript:` pattern shouldn't be storable
+      // even as inert data.
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        return { valid: false, message: 'URL must use http or https.' };
+      }
+      return { valid: true };
+    }
 
     case 'domain': {
       const d = normaliseDomain(trimmed);

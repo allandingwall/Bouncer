@@ -19,6 +19,43 @@
         <p class="lede">Add patterns you want to keep yourself away from.</p>
       </section>
 
+      <section class="guide" aria-labelledby="guide-heading">
+        <h2 id="guide-heading" class="guide-heading">How to write a pattern</h2>
+        <dl class="guide-grid">
+          <dt>Domain</dt>
+          <dd>
+            <p>Blocks the domain and every subdomain. The most common choice.</p>
+            <p class="guide-examples">
+              <code>reddit.com</code> blocks
+              <code>reddit.com</code>, <code>old.reddit.com</code>,
+              <code>www.reddit.com/r/anything</code>.
+            </p>
+          </dd>
+
+          <dt>Exact URL</dt>
+          <dd>
+            <p>Blocks one specific URL only. Use sparingly — even a trailing slash counts.</p>
+            <p class="guide-examples">
+              <code>https://news.ycombinator.com/newest</code> blocks that page,
+              but <em>not</em>
+              <code>https://news.ycombinator.com/</code>.
+            </p>
+          </dd>
+
+          <dt>Wildcard</dt>
+          <dd>
+            <p>
+              A glob where <code>*</code> matches any sequence of characters. Useful when Domain
+              is too broad and Exact is too narrow.
+            </p>
+            <p class="guide-examples">
+              <code>*.twitter.com/*</code> blocks every Twitter URL on any subdomain.
+              <code>reddit.com/r/*</code> blocks every subreddit but leaves the homepage open.
+            </p>
+          </dd>
+        </dl>
+      </section>
+
       <section class="add" aria-labelledby="add-heading">
         <h2 id="add-heading" class="visually-hidden">Add a rule</h2>
         <form id="add-form" class="add-form" novalidate>

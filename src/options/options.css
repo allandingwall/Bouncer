@@ -103,6 +103,75 @@ body {
   font-size: 1.0625rem;
 }
 
+/* Guide */
+.guide {
+  margin: 2.25rem 0 2.5rem;
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+}
+.guide-heading {
+  font-family: var(--sans);
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+  margin: 0 0 1.25rem;
+}
+.guide-grid {
+  display: grid;
+  grid-template-columns: 7rem 1fr;
+  gap: 1rem 1.75rem;
+  margin: 0;
+  align-items: baseline;
+}
+.guide-grid dt {
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+  font-weight: 500;
+  padding-top: 0.125rem;
+}
+.guide-grid dd {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+.guide-grid dd p {
+  margin: 0 0 0.5rem;
+}
+.guide-grid dd p:last-child {
+  margin-bottom: 0;
+}
+.guide-examples {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.guide-grid code {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--accent);
+  background: transparent;
+  padding: 0;
+}
+
+@media (max-width: 36rem) {
+  .guide-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem 0;
+  }
+  .guide-grid dt {
+    margin-top: 0.75rem;
+  }
+  .guide-grid dt:first-child {
+    margin-top: 0;
+  }
+}
+
 /* Add form */
 .add {
   padding: 1.5rem 0 0;

@@ -1,0 +1,243 @@
+/* Bouncer block page — brutalist bones, Anthropic palette.
+   Self-contained: no external fonts, no remote assets. */
+
+:root {
+  --bg: #f0eee6;
+  --ink: #191919;
+  --muted: #6b6b68;
+  --hairline: #d9d6cc;
+  --accent: #cc785c;
+
+  --serif: 'Iowan Old Style', 'Hoefler Text', 'Apple Garamond', Georgia, 'Times New Roman', serif;
+  --sans: 'Söhne', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --measure: 38rem;
+  --leading: 1.5;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1f1e1b;
+    --ink: #e8e6de;
+    --muted: #9b9890;
+    --hairline: #3a3833;
+    --accent: #d68a6f;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 18px;
+  line-height: var(--leading);
+  font-feature-settings: 'kern', 'liga', 'onum';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.page {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: clamp(2.5rem, 8vh, 6rem) clamp(1.5rem, 6vw, 3rem) 6rem;
+  opacity: 0;
+  animation: fade-in 320ms ease-out forwards;
+  animation-delay: 40ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  to {
+    opacity: 1;
+  }
+}
+
+/* ── Masthead ────────────────────────────────────────────────────────────── */
+
+.masthead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.wordmark {
+  font-family: var(--serif);
+  font-size: 1.625rem;
+  font-weight: 500;
+  font-feature-settings: 'kern', 'liga';
+  color: var(--accent);
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+
+.masthead-status {
+  font-family: var(--sans);
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ── Headline + lede ─────────────────────────────────────────────────────── */
+
+.headline {
+  font-family: var(--serif);
+  font-size: clamp(2.5rem, 6vw, 3.75rem);
+  line-height: 1.05;
+  font-weight: 500;
+  letter-spacing: -0.012em;
+  margin: 3.5rem 0 0;
+  /* Soft drop-cap-style emphasis without an actual drop cap. */
+  font-feature-settings: 'kern', 'liga', 'lnum';
+}
+
+.lede {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.0625rem;
+  color: var(--muted);
+  max-width: 28rem;
+  margin: 1rem 0 3.5rem;
+}
+
+/* ── Metadata grid ──────────────────────────────────────────────────────── */
+
+.meta {
+  padding-top: 2.25rem;
+  border-top: 1px solid var(--hairline);
+}
+
+.meta-grid {
+  display: grid;
+  grid-template-columns: 5rem 1fr;
+  gap: 0.625rem 1.75rem;
+  margin: 0;
+  align-items: baseline;
+}
+
+.meta dt {
+  font-family: var(--sans);
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+  padding-top: 0.125rem;
+}
+
+.meta dd {
+  margin: 0;
+  font-family: var(--serif);
+  color: var(--ink);
+  font-size: 1rem;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
+.url {
+  font-family: var(--mono);
+  font-size: 0.9375rem;
+  color: var(--accent);
+  background: transparent;
+  padding: 0;
+}
+
+.rules {
+  list-style: none;
+  margin: 2rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.rule {
+  display: grid;
+  grid-template-columns: 5rem 1fr;
+  gap: 0.625rem 1.75rem;
+  align-items: baseline;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--hairline);
+}
+
+.rule:first-child {
+  padding-top: 1.5rem;
+}
+
+.rule-label {
+  font-family: var(--sans);
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.rule-pattern {
+  font-family: var(--mono);
+  font-size: 0.9375rem;
+  color: var(--ink);
+  word-break: break-all;
+}
+
+.rule-type {
+  font-family: var(--serif);
+  font-style: italic;
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+
+.rule-note {
+  font-family: var(--serif);
+  color: var(--muted);
+  font-size: 0.9375rem;
+  font-style: italic;
+}
+
+/* ── Footer line ────────────────────────────────────────────────────────── */
+
+.footnote {
+  margin-top: 4rem;
+  font-family: var(--sans);
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ── Focus ──────────────────────────────────────────────────────────────── */
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}

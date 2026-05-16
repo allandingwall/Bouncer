@@ -23,6 +23,9 @@ pnpm-debug.log*
 .env.*
 !.env.example
 
+# Local working notes (not part of the project)
+code_review.md
+
 # Editor / OS
 .DS_Store
 Thumbs.db

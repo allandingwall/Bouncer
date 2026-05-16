@@ -45,22 +45,41 @@ export function isSameOrSubdomain(host: string, domain: string): boolean {
 
 /** Convert a wildcard pattern (`*` = any chars) into an anchored RegExp. */
 export function wildcardToRegExp(pattern: string): RegExp {
-  const cached = WILDCARD_REGEX_CACHE.get(pattern);
-  if (cached) return cached;
-  const re = new RegExp(`^${compileWildcardBody(pattern)}$`, 'i');
-  WILDCARD_REGEX_CACHE.set(pattern, re);
-  return re;
+  return new RegExp(`^${compileWildcardBody(pattern)}$`, 'i');
 }
 
 /**
- * Memo cache for compiled wildcard regexes. The matcher is called on every
- * navigation, against every enabled rule; recompiling the same pattern's
- * regex per call shows up in profiles when the rule list is non-trivial.
- *
- * Patterns are already length-bounded (`MAX_PATTERN_LENGTH`) and rule count
- * is bounded by storage limits, so the cache size is naturally bounded too.
+ * Two-pointer glob match. `*` matches any sequence of characters; all other
+ * characters compare literally. Linear in time and stack — no
+ * catastrophic-backtracking shape exists, unlike the regex-based path this
+ * replaced on the matcher hot path. Caller is responsible for case
+ * normalisation. Used by `matchWildcard` so that an attacker-controlled
+ * pattern can't pin a browser tab on a crafted URL.
  */
-const WILDCARD_REGEX_CACHE = new Map<string, RegExp>();
+export function globTest(pattern: string, text: string): boolean {
+  let pi = 0;
+  let ti = 0;
+  let starPi = -1;
+  let starTi = -1;
+  while (ti < text.length) {
+    if (pi < pattern.length && pattern.charCodeAt(pi) === text.charCodeAt(ti)) {
+      pi++;
+      ti++;
+    } else if (pi < pattern.length && pattern.charCodeAt(pi) === 0x2a /* '*' */) {
+      starPi = pi;
+      starTi = ti;
+      pi++;
+    } else if (starPi !== -1) {
+      pi = starPi + 1;
+      starTi++;
+      ti = starTi;
+    } else {
+      return false;
+    }
+  }
+  while (pi < pattern.length && pattern.charCodeAt(pi) === 0x2a) pi++;
+  return pi === pattern.length;
+}
 
 /**
  * Compile a wildcard pattern to a regex body (no anchors).
@@ -150,12 +169,30 @@ function matchWildcard(rawUrl: string, _normalisedUrl: string, pattern: string):
     return false;
   }
   const path = parsed.pathname || '/';
-  const withScheme = `${parsed.protocol}//${parsed.host}${path}${parsed.search}${parsed.hash}`;
-  const withoutScheme = `${parsed.host}${path}${parsed.search}${parsed.hash}`;
+  const withScheme =
+    `${parsed.protocol}//${parsed.host}${path}${parsed.search}${parsed.hash}`.toLowerCase();
+  const withoutScheme =
+    `${parsed.host}${path}${parsed.search}${parsed.hash}`.toLowerCase();
 
-  const patternHasScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(pattern);
-  const re = wildcardToRegExp(pattern);
-  return patternHasScheme ? re.test(withScheme) : re.test(withoutScheme);
+  const pLower = pattern.toLowerCase();
+  const patternHasScheme = /^[a-z][a-z0-9+.-]*:\/\//.test(pLower);
+  const text = patternHasScheme ? withScheme : withoutScheme;
+
+  if (globTest(pLower, text)) return true;
+
+  // Auto-subdomain rule: when the pattern's host portion is a literal
+  // domain (no `*` and contains a `.`), also accept a leading subdomain in
+  // the URL — same intent as the regex-side `(?:[^/]+\.)?` prefix in
+  // `compileWildcardBody`. Implemented here as a second attempt with `*.`
+  // inserted in front of the host, so the whole matcher stays linear.
+  const hostStart = patternHasScheme ? pLower.indexOf('://') + 3 : 0;
+  const slashIdx = pLower.indexOf('/', hostStart);
+  const hostEnd = slashIdx === -1 ? pLower.length : slashIdx;
+  const host = pLower.slice(hostStart, hostEnd);
+  if (host.includes('*') || !host.includes('.')) return false;
+
+  const withPrefix = `${pLower.slice(0, hostStart)}*.${pLower.slice(hostStart)}`;
+  return globTest(withPrefix, text);
 }
 
 /** Return every enabled rule that matches the given URL. */

@@ -45,8 +45,22 @@ export function isSameOrSubdomain(host: string, domain: string): boolean {
 
 /** Convert a wildcard pattern (`*` = any chars) into an anchored RegExp. */
 export function wildcardToRegExp(pattern: string): RegExp {
-  return new RegExp(`^${compileWildcardBody(pattern)}$`, 'i');
+  const cached = WILDCARD_REGEX_CACHE.get(pattern);
+  if (cached) return cached;
+  const re = new RegExp(`^${compileWildcardBody(pattern)}$`, 'i');
+  WILDCARD_REGEX_CACHE.set(pattern, re);
+  return re;
 }
+
+/**
+ * Memo cache for compiled wildcard regexes. The matcher is called on every
+ * navigation, against every enabled rule; recompiling the same pattern's
+ * regex per call shows up in profiles when the rule list is non-trivial.
+ *
+ * Patterns are already length-bounded (`MAX_PATTERN_LENGTH`) and rule count
+ * is bounded by storage limits, so the cache size is naturally bounded too.
+ */
+const WILDCARD_REGEX_CACHE = new Map<string, RegExp>();
 
 /**
  * Compile a wildcard pattern to a regex body (no anchors).

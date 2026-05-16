@@ -1,0 +1,24 @@
+{
+  "rules": [
+    {
+      "pattern": "instagram.com",
+      "matchType": "domain",
+      "enabled": true
+    },
+    {
+      "pattern": "reddit.com",
+      "matchType": "domain",
+      "enabled": true
+    },
+    {
+      "pattern": "x.com",
+      "matchType": "domain",
+      "enabled": true
+    },
+    {
+      "pattern": "facebook.com",
+      "matchType": "domain",
+      "enabled": true
+    }
+  ]
+}

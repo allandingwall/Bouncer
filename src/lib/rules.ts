@@ -24,6 +24,9 @@ export const MAX_PATTERN_LENGTH = 2048;
 /** Upper bound on the user-supplied note text. */
 export const MAX_NOTE_LENGTH = 500;
 
+/** Upper bound on a group name. Kept short so headers stay one-line. */
+export const MAX_GROUP_NAME_LENGTH = 60;
+
 /**
  * Cap on `*` count in a wildcard pattern. Each `*` becomes a `.*` in the
  * compiled regex; many adjacent `.*` segments enable catastrophic
@@ -87,6 +90,39 @@ export function validatePattern(pattern: string, matchType: MatchType): Validati
   }
 }
 
+/**
+ * Validate a group name. Group names are UI-only labels, so the rules are
+ * lighter than for patterns: non-empty after trim, within the length cap,
+ * and free of control characters that would mangle the DOM rendering.
+ */
+export function validateGroup(group: string): ValidationResult {
+  const trimmed = group.trim();
+  if (!trimmed) return { valid: false, message: 'Group name is required.' };
+  if (trimmed.length > MAX_GROUP_NAME_LENGTH) {
+    return {
+      valid: false,
+      message: `Group name is too long (max ${MAX_GROUP_NAME_LENGTH} chars).`,
+    };
+  }
+  if (containsControlChar(trimmed)) {
+    return { valid: false, message: 'Group name contains invalid characters.' };
+  }
+  return { valid: true };
+}
+
+/** True if the string contains any ASCII control character (incl. DEL). */
+function containsControlChar(s: string): boolean {
+  for (let i = 0; i < s.length; i++) {
+    const code = s.charCodeAt(i);
+    if (code < 0x20 || code === 0x7f) return true;
+  }
+  return false;
+}
+
+function clipGroup(group: string): string {
+  return group.length > MAX_GROUP_NAME_LENGTH ? group.slice(0, MAX_GROUP_NAME_LENGTH) : group;
+}
+
 function generateId(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID();
@@ -99,6 +135,8 @@ export interface CreateRuleInput {
   pattern: string;
   matchType: MatchType;
   note?: string;
+  /** Optional group name. Silently dropped if it fails `validateGroup`. */
+  group?: string;
   enabled?: boolean;
 }
 
@@ -111,6 +149,10 @@ export function createRule(input: CreateRuleInput): BlockRule {
     createdAt: Date.now(),
   };
   if (input.note && input.note.trim()) rule.note = clipNote(input.note.trim());
+  if (input.group) {
+    const g = input.group.trim();
+    if (g && validateGroup(g).valid) rule.group = clipGroup(g);
+  }
   return rule;
 }
 
@@ -130,6 +172,14 @@ export function updateRule(
     const n = patch.note.trim();
     if (n) next.note = clipNote(n);
     else delete next.note;
+  }
+  if (patch.group !== undefined) {
+    const g = patch.group.trim();
+    // Empty / invalid group strings clear the assignment, same way an
+    // empty note clears the note. This makes "ungrouped" expressible
+    // through the same patch shape as everything else.
+    if (g && validateGroup(g).valid) next.group = clipGroup(g);
+    else delete next.group;
   }
   return next;
 }
@@ -168,13 +218,26 @@ export function deserializeRules(input: string): ImportResult {
     throw new Error('Expected an object with a "rules" array.');
   }
 
+  // Top-level `group` becomes the default for any rule entry that doesn't
+  // specify its own. Lets example/template blocklists declare their group
+  // once at the top rather than repeating it on every entry.
+  const rawDefault = (data as { group?: unknown }).group;
+  const defaultGroup =
+    typeof rawDefault === 'string' && rawDefault.trim() && validateGroup(rawDefault).valid
+      ? clipGroup(rawDefault.trim())
+      : undefined;
+
   const out: BlockRule[] = [];
   let skipped = 0;
 
   for (const item of rulesField) {
     const parsed = parseRule(item);
-    if (parsed) out.push(parsed);
-    else skipped += 1;
+    if (!parsed) {
+      skipped += 1;
+      continue;
+    }
+    if (defaultGroup && !parsed.group) parsed.group = defaultGroup;
+    out.push(parsed);
   }
 
   return { rules: out, skipped };
@@ -206,7 +269,27 @@ export function parseRule(input: unknown): BlockRule | null {
 
   const rule: BlockRule = { id, pattern, matchType, enabled, createdAt };
   if (typeof r.note === 'string' && r.note.trim()) rule.note = clipNote(r.note.trim());
+  if (typeof r.group === 'string' && r.group.trim() && validateGroup(r.group).valid) {
+    rule.group = clipGroup(r.group.trim());
+  }
   return rule;
+}
+
+/**
+ * Distinct group memberships present in the given rule set, in display
+ * order: ungrouped first (represented as `null`) if any rules lack a
+ * group, then named groups alphabetically (locale-aware). Used by the
+ * options-page section renderer and the popup datalist.
+ */
+export function groupsOf(rules: readonly BlockRule[]): Array<string | null> {
+  let hasUngrouped = false;
+  const named = new Set<string>();
+  for (const r of rules) {
+    if (r.group) named.add(r.group);
+    else hasUngrouped = true;
+  }
+  const sortedNamed = [...named].sort((a, b) => a.localeCompare(b));
+  return hasUngrouped ? [null, ...sortedNamed] : sortedNamed;
 }
 
 /** Case-insensitive substring search across pattern + note. */

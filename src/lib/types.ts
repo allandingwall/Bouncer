@@ -13,6 +13,12 @@ export interface BlockRule {
   createdAt: number;
   /** Optional human-readable note. */
   note?: string;
+  /**
+   * Optional group name. Pure UI / organisation metadata — never reaches
+   * the matcher or DNR. Used by the options page to sectionise the list
+   * and to enable bulk operations like "delete every rule in this group".
+   */
+  group?: string;
 }
 
 export interface StoredState {

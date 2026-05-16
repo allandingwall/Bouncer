@@ -3,12 +3,15 @@ import {
   createRule,
   deserializeRules,
   filterRules,
+  groupsOf,
   isDuplicate,
+  MAX_GROUP_NAME_LENGTH,
   MAX_NOTE_LENGTH,
   MAX_PATTERN_LENGTH,
   MAX_WILDCARD_STARS,
   serializeRules,
   updateRule,
+  validateGroup,
   validatePattern,
 } from '../src/lib/rules.js';
 import type { BlockRule } from '../src/lib/types.js';
@@ -100,6 +103,122 @@ describe('note length', () => {
     const note = 'x'.repeat(MAX_NOTE_LENGTH + 50);
     const r = createRule({ pattern: 'reddit.com', matchType: 'domain', note });
     expect(r.note?.length).toBe(MAX_NOTE_LENGTH);
+  });
+});
+
+describe('validateGroup', () => {
+  it('accepts a typical group name', () => {
+    expect(validateGroup('Social Media').valid).toBe(true);
+  });
+
+  it('rejects empty / whitespace', () => {
+    expect(validateGroup('').valid).toBe(false);
+    expect(validateGroup('   ').valid).toBe(false);
+  });
+
+  it('rejects names longer than the cap', () => {
+    expect(validateGroup('a'.repeat(MAX_GROUP_NAME_LENGTH + 1)).valid).toBe(false);
+  });
+
+  it('rejects ASCII control characters', () => {
+    // Tab and bell — characters that would mess with DOM rendering.
+    expect(validateGroup('foo\tbar').valid).toBe(false);
+    expect(validateGroup('foo\x07bar').valid).toBe(false);
+  });
+});
+
+describe('group on createRule / updateRule', () => {
+  it('stores a trimmed, valid group', () => {
+    const r = createRule({ pattern: 'reddit.com', matchType: 'domain', group: '  News  ' });
+    expect(r.group).toBe('News');
+  });
+
+  it('silently drops an invalid group on create', () => {
+    const r = createRule({
+      pattern: 'reddit.com',
+      matchType: 'domain',
+      group: 'a'.repeat(MAX_GROUP_NAME_LENGTH + 1),
+    });
+    expect(r.group).toBeUndefined();
+  });
+
+  it('omits group when blank', () => {
+    const r = createRule({ pattern: 'reddit.com', matchType: 'domain', group: '   ' });
+    expect(r.group).toBeUndefined();
+  });
+
+  it('sets a group via updateRule', () => {
+    const original = createRule({ pattern: 'reddit.com', matchType: 'domain' });
+    const next = updateRule(original, { group: 'News' });
+    expect(next.group).toBe('News');
+  });
+
+  it('clears a group when patch is an empty string', () => {
+    const original = createRule({ pattern: 'reddit.com', matchType: 'domain', group: 'News' });
+    expect(updateRule(original, { group: '' }).group).toBeUndefined();
+  });
+});
+
+describe('groupsOf', () => {
+  it('returns named groups alphabetically, with ungrouped first if present', () => {
+    const rules = [
+      createRule({ pattern: 'a.com', matchType: 'domain', group: 'News' }),
+      createRule({ pattern: 'b.com', matchType: 'domain' }), // ungrouped
+      createRule({ pattern: 'c.com', matchType: 'domain', group: 'Apps' }),
+      createRule({ pattern: 'd.com', matchType: 'domain', group: 'News' }),
+    ];
+    expect(groupsOf(rules)).toEqual([null, 'Apps', 'News']);
+  });
+
+  it('returns only named groups when every rule has a group', () => {
+    const rules = [
+      createRule({ pattern: 'a.com', matchType: 'domain', group: 'News' }),
+      createRule({ pattern: 'b.com', matchType: 'domain', group: 'Apps' }),
+    ];
+    expect(groupsOf(rules)).toEqual(['Apps', 'News']);
+  });
+
+  it('returns [] for empty input', () => {
+    expect(groupsOf([])).toEqual([]);
+  });
+});
+
+describe('deserializeRules — top-level group default', () => {
+  it('applies the top-level group to rules that lack one', () => {
+    const json = JSON.stringify({
+      version: 1,
+      group: 'Social Media',
+      rules: [
+        { pattern: 'instagram.com', matchType: 'domain' },
+        { pattern: 'reddit.com', matchType: 'domain' },
+      ],
+    });
+    const { rules } = deserializeRules(json);
+    expect(rules.map((r) => r.group)).toEqual(['Social Media', 'Social Media']);
+  });
+
+  it('per-rule group overrides the top-level default', () => {
+    const json = JSON.stringify({
+      version: 1,
+      group: 'Social Media',
+      rules: [
+        { pattern: 'instagram.com', matchType: 'domain', group: 'Pinned' },
+        { pattern: 'reddit.com', matchType: 'domain' },
+      ],
+    });
+    const { rules } = deserializeRules(json);
+    expect(rules[0]!.group).toBe('Pinned');
+    expect(rules[1]!.group).toBe('Social Media');
+  });
+
+  it('ignores an invalid top-level group (rules end up ungrouped)', () => {
+    const json = JSON.stringify({
+      version: 1,
+      group: '   ',
+      rules: [{ pattern: 'reddit.com', matchType: 'domain' }],
+    });
+    const { rules } = deserializeRules(json);
+    expect(rules[0]!.group).toBeUndefined();
   });
 });
 

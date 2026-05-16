@@ -11,7 +11,9 @@ import {
 } from '../src/lib/matcher.js';
 import type { BlockRule, MatchType } from '../src/lib/types.js';
 
-const rule = (overrides: Partial<BlockRule> & Pick<BlockRule, 'pattern' | 'matchType'>): BlockRule => ({
+const rule = (
+  overrides: Partial<BlockRule> & Pick<BlockRule, 'pattern' | 'matchType'>,
+): BlockRule => ({
   id: 'r-' + Math.random().toString(36).slice(2),
   enabled: true,
   createdAt: 0,
@@ -94,55 +96,93 @@ describe('ruleMatches — exact', () => {
   const url = 'https://example.com/foo';
 
   it('matches identical URL', () => {
-    expect(ruleMatches(url, rule({ pattern: 'https://example.com/foo', matchType: 'exact' }))).toBe(true);
+    expect(ruleMatches(url, rule({ pattern: 'https://example.com/foo', matchType: 'exact' }))).toBe(
+      true,
+    );
   });
 
   it('does not match different paths', () => {
-    expect(ruleMatches(url, rule({ pattern: 'https://example.com/bar', matchType: 'exact' }))).toBe(false);
+    expect(ruleMatches(url, rule({ pattern: 'https://example.com/bar', matchType: 'exact' }))).toBe(
+      false,
+    );
   });
 
   it('treats trailing slash on root as equivalent', () => {
     const root = 'https://example.com/';
-    expect(ruleMatches(root, rule({ pattern: 'https://example.com', matchType: 'exact' }))).toBe(true);
+    expect(ruleMatches(root, rule({ pattern: 'https://example.com', matchType: 'exact' }))).toBe(
+      true,
+    );
   });
 
   it('is case-sensitive on path', () => {
-    expect(ruleMatches('https://example.com/Foo', rule({ pattern: 'https://example.com/foo', matchType: 'exact' }))).toBe(false);
+    expect(
+      ruleMatches(
+        'https://example.com/Foo',
+        rule({ pattern: 'https://example.com/foo', matchType: 'exact' }),
+      ),
+    ).toBe(false);
   });
 
   it('returns false for unparseable input URL', () => {
-    expect(ruleMatches('garbage', rule({ pattern: 'https://example.com', matchType: 'exact' }))).toBe(false);
+    expect(
+      ruleMatches('garbage', rule({ pattern: 'https://example.com', matchType: 'exact' })),
+    ).toBe(false);
   });
 });
 
 describe('ruleMatches — domain', () => {
   it('matches the domain itself', () => {
-    expect(ruleMatches('https://reddit.com/r/foo', rule({ pattern: 'reddit.com', matchType: 'domain' }))).toBe(true);
+    expect(
+      ruleMatches('https://reddit.com/r/foo', rule({ pattern: 'reddit.com', matchType: 'domain' })),
+    ).toBe(true);
   });
 
   it('matches subdomains', () => {
-    expect(ruleMatches('https://old.reddit.com/r/foo', rule({ pattern: 'reddit.com', matchType: 'domain' }))).toBe(true);
+    expect(
+      ruleMatches(
+        'https://old.reddit.com/r/foo',
+        rule({ pattern: 'reddit.com', matchType: 'domain' }),
+      ),
+    ).toBe(true);
   });
 
   it('does not match unrelated hosts', () => {
-    expect(ruleMatches('https://example.com', rule({ pattern: 'reddit.com', matchType: 'domain' }))).toBe(false);
+    expect(
+      ruleMatches('https://example.com', rule({ pattern: 'reddit.com', matchType: 'domain' })),
+    ).toBe(false);
   });
 
   it('treats www. as the apex domain', () => {
-    expect(ruleMatches('https://www.reddit.com', rule({ pattern: 'reddit.com', matchType: 'domain' }))).toBe(true);
+    expect(
+      ruleMatches('https://www.reddit.com', rule({ pattern: 'reddit.com', matchType: 'domain' })),
+    ).toBe(true);
   });
 
   it('accepts patterns with scheme and path (strips them)', () => {
-    expect(ruleMatches('https://reddit.com/x', rule({ pattern: 'https://reddit.com/anything', matchType: 'domain' }))).toBe(true);
+    expect(
+      ruleMatches(
+        'https://reddit.com/x',
+        rule({ pattern: 'https://reddit.com/anything', matchType: 'domain' }),
+      ),
+    ).toBe(true);
   });
 
   it('is scheme-agnostic', () => {
-    expect(ruleMatches('http://reddit.com', rule({ pattern: 'reddit.com', matchType: 'domain' }))).toBe(true);
+    expect(
+      ruleMatches('http://reddit.com', rule({ pattern: 'reddit.com', matchType: 'domain' })),
+    ).toBe(true);
   });
 
   it('rejects host suffixes that are not subdomains (suffix attack)', () => {
-    expect(ruleMatches('https://evilreddit.com', rule({ pattern: 'reddit.com', matchType: 'domain' }))).toBe(false);
-    expect(ruleMatches('https://reddit.com.evil.com', rule({ pattern: 'reddit.com', matchType: 'domain' }))).toBe(false);
+    expect(
+      ruleMatches('https://evilreddit.com', rule({ pattern: 'reddit.com', matchType: 'domain' })),
+    ).toBe(false);
+    expect(
+      ruleMatches(
+        'https://reddit.com.evil.com',
+        rule({ pattern: 'reddit.com', matchType: 'domain' }),
+      ),
+    ).toBe(false);
   });
 });
 
@@ -207,11 +247,15 @@ describe('findMatchingRules', () => {
 
 describe('isBlocked', () => {
   it('returns true on any match', () => {
-    expect(isBlocked('https://reddit.com', [rule({ pattern: 'reddit.com', matchType: 'domain' })])).toBe(true);
+    expect(
+      isBlocked('https://reddit.com', [rule({ pattern: 'reddit.com', matchType: 'domain' })]),
+    ).toBe(true);
   });
 
   it('returns false when no rules match', () => {
-    expect(isBlocked('https://nytimes.com', [rule({ pattern: 'reddit.com', matchType: 'domain' })])).toBe(false);
+    expect(
+      isBlocked('https://nytimes.com', [rule({ pattern: 'reddit.com', matchType: 'domain' })]),
+    ).toBe(false);
   });
 });
 

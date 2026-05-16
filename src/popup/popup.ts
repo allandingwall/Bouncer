@@ -23,7 +23,8 @@ async function init(): Promise<void> {
   const tab = await getActiveTab();
   currentUrl = tab?.url ?? null;
 
-  $<HTMLParagraphElement>('#current-url').textContent = currentUrl ?? 'No URL available for this tab.';
+  $<HTMLParagraphElement>('#current-url').textContent =
+    currentUrl ?? 'No URL available for this tab.';
 
   const select = $<HTMLSelectElement>('#match-type');
   refreshPattern(select.value as MatchType);

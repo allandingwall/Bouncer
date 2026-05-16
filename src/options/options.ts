@@ -194,7 +194,11 @@ function renderList(): void {
 
   list.replaceChildren();
 
-  count.textContent = formatCount(state.rules.length, visible.length, state.query.trim().length > 0);
+  count.textContent = formatCount(
+    state.rules.length,
+    visible.length,
+    state.query.trim().length > 0,
+  );
 
   if (state.rules.length === 0) {
     empty.hidden = false;

@@ -171,10 +171,7 @@ describe('onRulesChanged', () => {
     const be = fakeBackend();
     const cb = vi.fn();
     onRulesChanged(cb, be.asBackend());
-    be.listeners[0]!(
-      { [STORAGE_KEY]: { newValue: sampleState, oldValue: undefined } },
-      'sync',
-    );
+    be.listeners[0]!({ [STORAGE_KEY]: { newValue: sampleState, oldValue: undefined } }, 'sync');
     expect(cb).toHaveBeenCalledWith([sampleRule]);
   });
 

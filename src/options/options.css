@@ -177,7 +177,9 @@ body {
   border: 1px solid var(--ink);
   padding: 0.625rem 1rem;
   cursor: pointer;
-  transition: background 120ms, color 120ms;
+  transition:
+    background 120ms,
+    color 120ms;
 }
 .btn:hover {
   background: var(--ink);

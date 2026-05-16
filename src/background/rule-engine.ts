@@ -68,7 +68,9 @@ export function buildDnrRules(rules: readonly BlockRule[], opts: BuildOptions): 
 
     const action: DNRRule['action'] = {
       type: 'redirect',
-      redirect: { regexSubstitution: `${opts.blockPageUrl}?url=\\0&rule=${encodeURIComponent(rule.id)}` },
+      redirect: {
+        regexSubstitution: `${opts.blockPageUrl}?url=\\0&rule=${encodeURIComponent(rule.id)}`,
+      },
     };
 
     switch (rule.matchType) {

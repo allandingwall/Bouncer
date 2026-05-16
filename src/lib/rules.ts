@@ -27,9 +27,11 @@ export function validatePattern(pattern: string, matchType: MatchType): Validati
 
     case 'domain': {
       const d = normaliseDomain(trimmed);
-      if (!d.includes('.')) return { valid: false, message: 'Domain must contain at least one dot.' };
+      if (!d.includes('.'))
+        return { valid: false, message: 'Domain must contain at least one dot.' };
       if (/[*?#]/.test(d)) return { valid: false, message: 'Domain cannot contain wildcards.' };
-      if (!/^[a-z0-9.-]+$/i.test(d)) return { valid: false, message: 'Domain contains invalid characters.' };
+      if (!/^[a-z0-9.-]+$/i.test(d))
+        return { valid: false, message: 'Domain contains invalid characters.' };
       return { valid: true };
     }
 
@@ -71,7 +73,10 @@ export function createRule(input: CreateRuleInput): BlockRule {
   return rule;
 }
 
-export function updateRule(rule: BlockRule, patch: Partial<Omit<BlockRule, 'id' | 'createdAt'>>): BlockRule {
+export function updateRule(
+  rule: BlockRule,
+  patch: Partial<Omit<BlockRule, 'id' | 'createdAt'>>,
+): BlockRule {
   const next: BlockRule = { ...rule };
   if (patch.pattern !== undefined) next.pattern = patch.pattern.trim();
   if (patch.matchType !== undefined) next.matchType = patch.matchType;
@@ -140,7 +145,8 @@ function parseRule(input: unknown): BlockRule | null {
   if (matchType !== 'exact' && matchType !== 'domain' && matchType !== 'wildcard') return null;
 
   const enabled = typeof r.enabled === 'boolean' ? r.enabled : true;
-  const createdAt = typeof r.createdAt === 'number' && Number.isFinite(r.createdAt) ? r.createdAt : Date.now();
+  const createdAt =
+    typeof r.createdAt === 'number' && Number.isFinite(r.createdAt) ? r.createdAt : Date.now();
   const id = typeof r.id === 'string' && r.id ? r.id : generateId();
 
   const rule: BlockRule = { id, pattern, matchType, enabled, createdAt };

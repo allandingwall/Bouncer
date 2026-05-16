@@ -1,8 +1,4 @@
-import {
-  CURRENT_SCHEMA_VERSION,
-  type BlockRule,
-  type StoredState,
-} from './types.js';
+import { CURRENT_SCHEMA_VERSION, type BlockRule, type StoredState } from './types.js';
 
 /**
  * Typed wrapper around browser.storage.
@@ -42,8 +38,12 @@ export interface StorageBackend {
   sync?: StorageArea;
   local: StorageArea;
   onChanged: {
-    addListener: (cb: (changes: Record<string, browser.storage.StorageChange>, area: string) => void) => void;
-    removeListener: (cb: (changes: Record<string, browser.storage.StorageChange>, area: string) => void) => void;
+    addListener: (
+      cb: (changes: Record<string, browser.storage.StorageChange>, area: string) => void,
+    ) => void;
+    removeListener: (
+      cb: (changes: Record<string, browser.storage.StorageChange>, area: string) => void,
+    ) => void;
   };
 }
 
@@ -105,10 +105,7 @@ export async function loadRules(backend?: StorageBackend): Promise<BlockRule[]> 
   return state.rules;
 }
 
-export async function saveRules(
-  rules: BlockRule[],
-  backend?: StorageBackend,
-): Promise<SaveResult> {
+export async function saveRules(rules: BlockRule[], backend?: StorageBackend): Promise<SaveResult> {
   return saveState({ rules, version: CURRENT_SCHEMA_VERSION }, backend);
 }
 

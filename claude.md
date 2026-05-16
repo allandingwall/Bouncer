@@ -1,6 +1,7 @@
 Build an open-source Firefox extension that blocks websites based on user-supplied URLs. Aim for professional, production-quality code suitable for publishing to AMO (addons.mozilla.org).
 
 ## Core functionality
+
 - Users add block rules via popup or options page
 - Each rule has a user-selectable match type:
   1. **Exact URL** — matches only the exact string
@@ -11,11 +12,13 @@ Build an open-source Firefox extension that blocks websites based on user-suppli
 - Rules persist via `browser.storage.sync` (fallback to `local`)
 
 ## UI surfaces
+
 - **Popup** — quick-add current tab with match-type selector; link to options
 - **Options page** — full CRUD: add, edit, delete, search, enable/disable per rule, import/export as JSON
 - **Block page** — see dedicated spec below
 
 ## Block page (design this thoughtfully)
+
 A well-designed, hand-crafted HTML page — not a placeholder. Treat it as a real piece of UI design.
 
 - Clean, modern, calm aesthetic — this page should feel intentional, not punitive. Think "gentle redirect" rather than "access denied error"
@@ -28,6 +31,7 @@ A well-designed, hand-crafted HTML page — not a placeholder. Treat it as a rea
 - Propose the visual direction (colour palette, typography, layout) before implementing and iterate if needed
 
 ## Technical requirements
+
 - **Manifest V3**
 - **TypeScript**, strict mode
 - Use `declarativeNetRequest` for redirects where possible; only fall back to `webRequest` if necessary
@@ -38,6 +42,7 @@ A well-designed, hand-crafted HTML page — not a placeholder. Treat it as a rea
 - **MIT license**; README with install / develop / build / contribute instructions; CONTRIBUTING.md; issue + PR templates
 
 ## Git workflow (use throughout)
+
 - Initialise a git repo at the start with a sensible `.gitignore` (node_modules, dist, .env, OS files, editor configs)
 - Commit in small, logical units — one concern per commit, not a single mega-commit at the end
 - Use **Conventional Commits** (`feat:`, `fix:`, `chore:`, `docs:`, `test:`, `refactor:`, `build:`, `ci:`) with clear, present-tense subject lines
@@ -48,16 +53,19 @@ A well-designed, hand-crafted HTML page — not a placeholder. Treat it as a rea
 - Don't push or set up remotes — the user will connect to GitHub themselves
 
 ## Suggested structure
+
 - `src/background/` — service worker, rule application
 - `src/popup/`, `src/options/`, `src/blocked/` — UI surfaces (vanilla TS or a lightweight framework — justify the choice)
 - `src/lib/matcher.ts` — pure functions for matching a URL against a rule (heavily tested)
 - `src/lib/storage.ts` — typed wrapper around `browser.storage`
 
 ## Deliverables
+
 - Loadable in Firefox via `about:debugging`
 - Passing test suite and CI
 - Clean git history with meaningful commits
 - Clear, complete README
 
 ## Before writing code
+
 Ask clarifying questions about: extension name, UI framework choice, block page visual direction, and any ambiguous behaviour (e.g. how to handle conflicting rules). Then propose the project structure and a brief implementation plan and wait for approval before implementing.

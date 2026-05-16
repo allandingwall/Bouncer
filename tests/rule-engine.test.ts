@@ -6,7 +6,9 @@ import {
 } from '../src/background/rule-engine.js';
 import type { BlockRule } from '../src/lib/types.js';
 
-const rule = (overrides: Partial<BlockRule> & Pick<BlockRule, 'pattern' | 'matchType'>): BlockRule => ({
+const rule = (
+  overrides: Partial<BlockRule> & Pick<BlockRule, 'pattern' | 'matchType'>,
+): BlockRule => ({
   id: 'r-' + overrides.pattern,
   enabled: true,
   createdAt: 0,
@@ -73,10 +75,7 @@ describe('buildDnrRules', () => {
   });
 
   it('produces regexFilter for wildcard rules', () => {
-    const [r] = buildDnrRules(
-      [rule({ pattern: '*.reddit.com/r/*', matchType: 'wildcard' })],
-      OPTS,
-    );
+    const [r] = buildDnrRules([rule({ pattern: '*.reddit.com/r/*', matchType: 'wildcard' })], OPTS);
     expect(r!.condition.regexFilter).toBe('^https?://.*\\.reddit\\.com/r/.*$');
   });
 
@@ -93,7 +92,9 @@ describe('buildDnrRules', () => {
       [rule({ id: 'r-1', pattern: 'reddit.com', matchType: 'domain' })],
       OPTS,
     );
-    expect(r!.action.redirect.regexSubstitution).toContain('moz-extension://abc/blocked/blocked.html');
+    expect(r!.action.redirect.regexSubstitution).toContain(
+      'moz-extension://abc/blocked/blocked.html',
+    );
     expect(r!.action.redirect.regexSubstitution).toContain('url=\\0');
     expect(r!.action.redirect.regexSubstitution).toContain('rule=r-1');
   });

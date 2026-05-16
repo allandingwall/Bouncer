@@ -11,7 +11,9 @@ describe('suggestPattern', () => {
   });
 
   it('returns the full URL for exact', () => {
-    expect(suggestPattern('https://reddit.com/foo?x=1', 'exact')).toBe('https://reddit.com/foo?x=1');
+    expect(suggestPattern('https://reddit.com/foo?x=1', 'exact')).toBe(
+      'https://reddit.com/foo?x=1',
+    );
   });
 
   it('wraps the host in a wildcard pattern', () => {

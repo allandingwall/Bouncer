@@ -8,11 +8,15 @@
   "browser_specific_settings": {
     "gecko": {
       "id": "bouncer@dingwall.dev",
-      "strict_min_version": "121.0"
+      "strict_min_version": "121.0",
+      "data_collection_permissions": { "required": ["none"] }
     }
   },
   "permissions": ["storage", "declarativeNetRequest", "webNavigation"],
   "host_permissions": ["*://*/*"],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; base-uri 'none'; form-action 'none'"
+  },
   "background": {
     "scripts": ["background/service-worker.ts"]
   },

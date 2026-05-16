@@ -4,7 +4,14 @@ import globals from 'globals';
 
 export default tseslint.config(
   {
-    ignores: ['dist/', 'node_modules/', '.web-ext-artifacts/', 'coverage/'],
+    ignores: [
+      'dist/',
+      'node_modules/',
+      '.web-ext-artifacts/',
+      'coverage/',
+      'eslint.config.js',
+      'web-ext-config.cjs',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,

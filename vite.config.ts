@@ -14,9 +14,7 @@ export default defineConfig({
     webExtension({
       manifest: resolve(__dirname, 'src/manifest.json'),
       browser: 'firefox',
-      additionalInputs: {
-        html: ['src/blocked/blocked.html'],
-      },
+      additionalInputs: ['src/blocked/blocked.html'],
     }),
   ],
 });

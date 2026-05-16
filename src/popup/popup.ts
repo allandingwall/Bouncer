@@ -1,7 +1,7 @@
-import { createRule, isDuplicate, validatePattern } from '../lib/rules.js';
+import { createRule, groupsOf, isDuplicate, validatePattern } from '../lib/rules.js';
 import { loadGlobalEnabled, loadRules, saveGlobalEnabled, saveRules } from '../lib/storage.js';
 import { suggestPattern } from './suggest.js';
-import type { MatchType } from '../lib/types.js';
+import type { BlockRule, MatchType } from '../lib/types.js';
 
 /**
  * Popup: quick-add the active tab as a block rule.
@@ -18,6 +18,7 @@ const $ = <T extends Element = HTMLElement>(sel: string): T => {
 };
 
 let currentUrl: string | null = null;
+let cachedRules: BlockRule[] = [];
 
 async function init(): Promise<void> {
   const tab = await getActiveTab();
@@ -35,6 +36,16 @@ async function init(): Promise<void> {
     e.preventDefault();
     void onSubmit();
   });
+
+  // Pre-populate the groups datalist so the user gets typeahead from the
+  // groups they've already named. We load best-effort — if storage is down
+  // the input just won't autocomplete.
+  try {
+    cachedRules = await loadRules();
+    refreshGroupsDatalist();
+  } catch {
+    cachedRules = [];
+  }
 
   $<HTMLAnchorElement>('#open-options').addEventListener('click', (e) => {
     e.preventDefault();
@@ -90,10 +101,22 @@ function refreshPattern(matchType: MatchType): void {
   $<HTMLInputElement>('#pattern').value = suggestPattern(currentUrl, matchType);
 }
 
+function refreshGroupsDatalist(): void {
+  const list = $<HTMLDataListElement>('#groups-list');
+  list.replaceChildren();
+  for (const group of groupsOf(cachedRules)) {
+    if (group === null) continue;
+    const opt = document.createElement('option');
+    opt.value = group;
+    list.append(opt);
+  }
+}
+
 async function onSubmit(): Promise<void> {
   const pattern = $<HTMLInputElement>('#pattern').value;
   const matchType = $<HTMLSelectElement>('#match-type').value as MatchType;
   const note = $<HTMLInputElement>('#note').value;
+  const group = $<HTMLInputElement>('#group').value;
 
   const validation = validatePattern(pattern, matchType);
   if (!validation.valid) {
@@ -109,7 +132,7 @@ async function onSubmit(): Promise<void> {
     return;
   }
 
-  const candidate = createRule({ pattern, matchType, note });
+  const candidate = createRule({ pattern, matchType, note, group });
   if (rules.some((r) => isDuplicate(r, candidate))) {
     showError('That rule already exists.');
     return;
@@ -122,10 +145,15 @@ async function onSubmit(): Promise<void> {
     return;
   }
 
+  cachedRules = [candidate, ...rules];
+  refreshGroupsDatalist();
+
   showError(null);
   showStatus(`Added ${candidate.pattern}`);
   $<HTMLInputElement>('#pattern').value = '';
   $<HTMLInputElement>('#note').value = '';
+  // Intentionally leave the group field populated — typical flow is "add a
+  // bunch of rules in the same group", so preserving it cuts re-typing.
   $<HTMLInputElement>('#pattern').focus();
 }
 

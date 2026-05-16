@@ -104,7 +104,9 @@ async function onSubmit(): Promise<void> {
 
   showError(null);
   showStatus(`Added ${candidate.pattern}`);
+  $<HTMLInputElement>('#pattern').value = '';
   $<HTMLInputElement>('#note').value = '';
+  $<HTMLInputElement>('#pattern').focus();
 }
 
 function showError(msg: string | null): void {

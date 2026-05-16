@@ -469,9 +469,36 @@ body {
   font-size: 0.8125rem;
   color: var(--muted);
   margin: 0 0 0 0.75rem;
+  flex: 1;
 }
 .io-message.error {
   color: var(--danger);
+}
+
+/* Destructive "delete all" button — pushed to the trailing edge so it
+   reads as a separate, intentional action rather than a third I/O verb. */
+#clear-all {
+  margin-left: auto;
+}
+.btn-danger {
+  background: transparent;
+  color: var(--danger);
+  border-color: var(--danger);
+}
+.btn-danger:hover {
+  background: var(--danger);
+  color: var(--bg);
+  border-color: var(--danger);
+}
+.btn-danger.confirming {
+  background: var(--danger);
+  color: var(--bg);
+  border-color: var(--danger);
+}
+.btn-danger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 :focus-visible {

@@ -29,13 +29,19 @@ interface State {
   query: string;
   /** Pending two-stage delete: rule id currently in "confirm?" mode. */
   pendingDeleteId: string | null;
+  /** Pending two-stage "delete all" confirmation. */
+  pendingClearAll: boolean;
 }
 
 const state: State = {
   rules: [],
   query: '',
   pendingDeleteId: null,
+  pendingClearAll: false,
 };
+
+/** Auto-cancel a pending two-stage confirmation after this many ms of inaction. */
+const CONFIRM_TIMEOUT_MS = 3500;
 
 let storageWarning: string | null = null;
 
@@ -91,6 +97,7 @@ function bindEvents(): void {
   $<HTMLInputElement>('#import-file').addEventListener('change', (e) => {
     void onImport(e);
   });
+  $<HTMLButtonElement>('#clear-all').addEventListener('click', onClearAll);
 }
 
 function onSubmitAdd(e: Event): void {
@@ -187,9 +194,57 @@ function setIoMessage(msg: string, isError = false): void {
   el.classList.toggle('error', isError);
 }
 
+/**
+ * Two-stage "delete all rules" confirm. First click flips the button into
+ * a confirmation state (text + colour); second click within the timeout
+ * actually clears the list. Auto-cancels after CONFIRM_TIMEOUT_MS so a
+ * stray click doesn't leave the page armed.
+ *
+ * Deliberately ignores the search filter — "delete all" means everything,
+ * not "everything currently visible". If we ever wanted bulk-delete of a
+ * filtered subset, that's a separate, more specific action.
+ */
+function onClearAll(): void {
+  if (state.rules.length === 0) return;
+
+  if (state.pendingClearAll) {
+    const count = state.rules.length;
+    state.pendingClearAll = false;
+    state.pendingDeleteId = null;
+    state.rules = [];
+    setIoMessage(`Deleted ${count} rule${count === 1 ? '' : 's'}.`);
+    void persist();
+    return;
+  }
+
+  state.pendingClearAll = true;
+  render();
+  window.setTimeout(() => {
+    if (state.pendingClearAll) {
+      state.pendingClearAll = false;
+      render();
+    }
+  }, CONFIRM_TIMEOUT_MS);
+}
+
+function renderClearAll(): void {
+  const btn = $<HTMLButtonElement>('#clear-all');
+  const count = state.rules.length;
+  // If the list emptied via another path (single delete clearing the last
+  // rule, say) while the bulk-delete was armed, drop the pending state so
+  // the button isn't stuck mid-prompt on top of an empty list.
+  if (count === 0 && state.pendingClearAll) state.pendingClearAll = false;
+  btn.disabled = count === 0;
+  btn.classList.toggle('confirming', state.pendingClearAll);
+  btn.textContent = state.pendingClearAll
+    ? `Really? Delete all ${count} rule${count === 1 ? '' : 's'}`
+    : 'Delete all rules';
+}
+
 function render(): void {
   renderStorageNote();
   renderList();
+  renderClearAll();
 }
 
 function renderStorageNote(): void {
@@ -302,7 +357,7 @@ function buildDeleteButton(rule: BlockRule): HTMLButtonElement {
           state.pendingDeleteId = null;
           render();
         }
-      }, 3500);
+      }, CONFIRM_TIMEOUT_MS);
     }
   });
   return btn;

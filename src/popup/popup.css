@@ -149,6 +149,14 @@ body {
   font-size: 0.75rem;
   color: var(--danger);
 }
+.status {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
 
 .btn {
   font-family: var(--sans);

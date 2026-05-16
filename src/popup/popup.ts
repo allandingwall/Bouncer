@@ -102,13 +102,33 @@ async function onSubmit(): Promise<void> {
     return;
   }
 
-  window.close();
+  showError(null);
+  showStatus(`Added ${candidate.pattern}`);
+  $<HTMLInputElement>('#note').value = '';
 }
 
-function showError(msg: string): void {
+function showError(msg: string | null): void {
   const el = $<HTMLParagraphElement>('#error');
+  if (!msg) {
+    el.hidden = true;
+    el.textContent = '';
+  } else {
+    el.hidden = false;
+    el.textContent = msg;
+  }
+}
+
+let statusClearTimer: number | null = null;
+function showStatus(msg: string): void {
+  const el = $<HTMLParagraphElement>('#status');
   el.hidden = false;
   el.textContent = msg;
+  if (statusClearTimer !== null) window.clearTimeout(statusClearTimer);
+  statusClearTimer = window.setTimeout(() => {
+    el.hidden = true;
+    el.textContent = '';
+    statusClearTimer = null;
+  }, 2500);
 }
 
 void init();

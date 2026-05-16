@@ -1,4 +1,5 @@
 import { CURRENT_SCHEMA_VERSION, type BlockRule, type StoredState } from './types.js';
+import { parseRule } from './rules.js';
 
 /**
  * Typed wrapper around browser.storage.
@@ -52,18 +53,34 @@ function defaultBackend(): StorageBackend {
   return (globalThis as unknown as { browser: { storage: StorageBackend } }).browser.storage;
 }
 
-function isStoredState(value: unknown): value is StoredState {
-  if (typeof value !== 'object' || value === null) return false;
-  const v = value as { rules?: unknown; version?: unknown };
-  return Array.isArray(v.rules) && typeof v.version === 'number';
+/**
+ * Validate-and-sanitise a stored state value. Storage is untrusted: another
+ * tab, another extension build, or a tampered sync record could have
+ * written something malformed. We drop unknown fields, coerce missing
+ * optional fields to defaults, and silently filter out any rule entry that
+ * fails `parseRule` — so downstream code can assume well-formed BlockRules.
+ */
+function sanitiseStoredState(value: unknown): StoredState | null {
+  if (typeof value !== 'object' || value === null) return null;
+  const v = value as { rules?: unknown; version?: unknown; globalEnabled?: unknown };
+  if (!Array.isArray(v.rules) || typeof v.version !== 'number') return null;
+
+  const rules: BlockRule[] = [];
+  for (const entry of v.rules) {
+    const parsed = parseRule(entry);
+    if (parsed) rules.push(parsed);
+  }
+
+  const out: StoredState = { rules, version: v.version };
+  if (typeof v.globalEnabled === 'boolean') out.globalEnabled = v.globalEnabled;
+  return out;
 }
 
 async function readFrom(area: StorageArea | undefined): Promise<StoredState | null> {
   if (!area) return null;
   try {
     const result = (await area.get(STORAGE_KEY)) as Record<string, unknown>;
-    const raw = result[STORAGE_KEY];
-    return isStoredState(raw) ? raw : null;
+    return sanitiseStoredState(result[STORAGE_KEY]);
   } catch {
     return null;
   }
@@ -133,8 +150,8 @@ export function onStateChanged(
   const listener = (changes: Record<string, browser.storage.StorageChange>): void => {
     const change = changes[STORAGE_KEY];
     if (!change) return;
-    const next: unknown = change.newValue;
-    if (isStoredState(next)) callback(next);
+    const next = sanitiseStoredState(change.newValue);
+    if (next) callback(next);
   };
   backend.onChanged.addListener(listener);
   return () => backend.onChanged.removeListener(listener);

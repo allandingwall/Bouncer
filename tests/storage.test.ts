@@ -121,6 +121,34 @@ describe('loadState', () => {
     const result = await loadState(be.asBackend());
     expect(result.state.rules).toEqual([]);
   });
+
+  it('drops individual malformed rules but keeps the valid ones', async () => {
+    be.sync!.data[STORAGE_KEY] = {
+      version: 1,
+      rules: [
+        { id: 'r1', pattern: 'reddit.com', matchType: 'domain', enabled: true, createdAt: 1 },
+        // Missing matchType
+        { id: 'r2', pattern: 'twitter.com', enabled: true, createdAt: 2 },
+        // Garbage values
+        'not even an object',
+        // Unsupported matchType
+        { id: 'r3', pattern: 'x.com', matchType: 'magic', enabled: true, createdAt: 3 },
+      ],
+    };
+    const result = await loadState(be.asBackend());
+    expect(result.state.rules).toHaveLength(1);
+    expect(result.state.rules[0]!.id).toBe('r1');
+  });
+
+  it('preserves globalEnabled when present, defaults to undefined otherwise', async () => {
+    be.sync!.data[STORAGE_KEY] = {
+      version: 1,
+      rules: [],
+      globalEnabled: false,
+    };
+    const result = await loadState(be.asBackend());
+    expect(result.state.globalEnabled).toBe(false);
+  });
 });
 
 describe('saveState', () => {

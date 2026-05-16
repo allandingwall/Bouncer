@@ -180,7 +180,13 @@ export function deserializeRules(input: string): ImportResult {
   return { rules: out, skipped };
 }
 
-function parseRule(input: unknown): BlockRule | null {
+/**
+ * Validate-and-coerce a single value into a BlockRule, or return null if it
+ * isn't well-formed. Also exported for the storage layer, which uses it as
+ * a sanitiser when reading state that another tab or device may have
+ * written.
+ */
+export function parseRule(input: unknown): BlockRule | null {
   if (typeof input !== 'object' || input === null) return null;
   const r = input as Record<string, unknown>;
 

@@ -261,3 +261,61 @@ body {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* ── "New group" dialog ──────────────────────────────────────────────── */
+
+.new-group-dialog {
+  background: var(--bg);
+  color: var(--ink);
+  border: 1px solid var(--hairline);
+  padding: 1.25rem;
+  width: calc(100vw - 1.5rem);
+  max-width: 19rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+}
+.new-group-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
+.new-group-title {
+  font-family: var(--serif);
+  font-size: 1.0625rem;
+  font-weight: 500;
+  margin: 0 0 0.875rem;
+  color: var(--ink);
+}
+.new-group-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  margin: 0;
+}
+.new-group-field {
+  display: block;
+}
+.new-group-field input {
+  width: 100%;
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 0;
+  padding: 0.5rem 0.625rem;
+}
+.new-group-field input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+  border-color: var(--accent);
+}
+.new-group-error {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  color: var(--danger);
+}
+.new-group-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}

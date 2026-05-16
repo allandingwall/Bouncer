@@ -65,6 +65,29 @@
       </footer>
     </main>
 
+    <dialog id="new-group-dialog" class="new-group-dialog" aria-labelledby="new-group-title">
+      <form method="dialog" class="new-group-form">
+        <h2 id="new-group-title" class="new-group-title">New group</h2>
+        <label class="new-group-field">
+          <span class="visually-hidden">Group name</span>
+          <input
+            id="new-group-name"
+            type="text"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            maxlength="60"
+            required
+          />
+        </label>
+        <p id="new-group-error" class="new-group-error" role="alert" hidden></p>
+        <div class="new-group-actions">
+          <button type="button" id="new-group-cancel" class="btn">Cancel</button>
+          <button type="submit" value="confirm" class="btn btn-primary">Create</button>
+        </div>
+      </form>
+    </dialog>
+
     <script type="module" src="./popup.ts"></script>
   </body>
 </html>

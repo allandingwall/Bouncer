@@ -1,9 +1,10 @@
-import { createRule, groupsOf, isDuplicate, validateGroup, validatePattern } from '../lib/rules.js';
+import { createRule, groupsOf, isDuplicate, validatePattern } from '../lib/rules.js';
 import { loadGlobalEnabled, loadRules, saveGlobalEnabled, saveRules } from '../lib/storage.js';
 import {
   insertNewGroupOption,
   NEW_GROUP_SENTINEL,
   populateGroupSelect,
+  promptForGroupName,
 } from '../lib/group-select.js';
 import { suggestPattern } from './suggest.js';
 import type { BlockRule, MatchType } from '../lib/types.js';
@@ -51,7 +52,9 @@ async function init(): Promise<void> {
     cachedRules = [];
   }
   refreshGroupSelect();
-  $<HTMLSelectElement>('#group').addEventListener('change', onGroupSelectChange);
+  $<HTMLSelectElement>('#group').addEventListener('change', () => {
+    void onGroupSelectChange();
+  });
 
   $<HTMLAnchorElement>('#open-options').addEventListener('click', (e) => {
     e.preventDefault();
@@ -119,28 +122,20 @@ function refreshGroupSelect(): void {
   populateGroupSelect(select, namedGroups, preserve);
 }
 
-/** Handle the "+ New group…" sentinel: prompt, validate, append + select. */
-function onGroupSelectChange(): void {
+/**
+ * Handle the "+ New group…" sentinel: open the inline dialog, validate, and
+ * append + select the resulting group. On cancel, revert to "(no group)".
+ */
+async function onGroupSelectChange(): Promise<void> {
   const select = $<HTMLSelectElement>('#group');
   if (select.value !== NEW_GROUP_SENTINEL) return;
 
-  const raw = window.prompt('New group name', '');
-  if (raw === null) {
+  const name = await promptForGroupName();
+  if (name === null) {
     select.value = '';
     return;
   }
-  const trimmed = raw.trim();
-  if (!trimmed) {
-    select.value = '';
-    return;
-  }
-  const v = validateGroup(trimmed);
-  if (!v.valid) {
-    window.alert(v.message ?? 'Invalid group name.');
-    select.value = '';
-    return;
-  }
-  insertNewGroupOption(select, trimmed);
+  insertNewGroupOption(select, name);
 }
 
 async function onSubmit(): Promise<void> {

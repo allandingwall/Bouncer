@@ -6,7 +6,6 @@ import {
   isDuplicate,
   serializeRules,
   updateRule,
-  validateGroup,
   validatePattern,
 } from '../lib/rules.js';
 import { loadState, saveGlobalEnabled, saveRules } from '../lib/storage.js';
@@ -15,6 +14,7 @@ import {
   insertNewGroupOption,
   NEW_GROUP_SENTINEL,
   populateGroupSelect,
+  promptForGroupName,
 } from '../lib/group-select.js';
 import type { BlockRule, MatchType } from '../lib/types.js';
 
@@ -108,31 +108,26 @@ function bindEvents(): void {
     void onImport(e);
   });
   $<HTMLButtonElement>('#clear-all').addEventListener('click', onClearAll);
-  $<HTMLSelectElement>('#add-group').addEventListener('change', onAddGroupSelectChange);
+  $<HTMLSelectElement>('#add-group').addEventListener('change', () => {
+    void onAddGroupSelectChange();
+  });
 }
 
-/** Handle the "+ New group…" sentinel on the add-form's group dropdown. */
-function onAddGroupSelectChange(): void {
+/**
+ * Handle the "+ New group…" sentinel on the add-form's group dropdown.
+ * Opens the inline dialog (no Firefox-native prompt) and either appends
+ * the new option as the current selection or reverts to "(no group)".
+ */
+async function onAddGroupSelectChange(): Promise<void> {
   const select = $<HTMLSelectElement>('#add-group');
   if (select.value !== NEW_GROUP_SENTINEL) return;
 
-  const raw = window.prompt('New group name', '');
-  if (raw === null) {
+  const name = await promptForGroupName();
+  if (name === null) {
     select.value = '';
     return;
   }
-  const trimmed = raw.trim();
-  if (!trimmed) {
-    select.value = '';
-    return;
-  }
-  const v = validateGroup(trimmed);
-  if (!v.valid) {
-    window.alert(v.message ?? 'Invalid group name.');
-    select.value = '';
-    return;
-  }
-  insertNewGroupOption(select, trimmed);
+  insertNewGroupOption(select, name);
 }
 
 function onSubmitAdd(e: Event): void {
@@ -441,8 +436,8 @@ function renderRule(rule: BlockRule): HTMLLIElement {
 
 /**
  * Inline `<select>` for moving a rule between groups. Lists every existing
- * group plus an "Ungrouped" option and a sentinel "+ New group…" that
- * window.prompts for a name. Commits on change.
+ * group plus an "—" (no-group) option and a sentinel "+ New group…" that
+ * opens the inline `<dialog>`. Commits on change.
  */
 function buildMoveSelect(rule: BlockRule): HTMLSelectElement {
   const select = document.createElement('select');
@@ -450,32 +445,23 @@ function buildMoveSelect(rule: BlockRule): HTMLSelectElement {
   select.setAttribute('aria-label', `Move rule '${rule.pattern}' to group`);
   const groupNames = groupsOf(state.rules).filter((g): g is string => g !== null);
   populateGroupSelect(select, groupNames, rule.group ?? '');
-  select.addEventListener('change', () => onMoveSelectChange(rule, select));
+  select.addEventListener('change', () => {
+    void onMoveSelectChange(rule, select);
+  });
   return select;
 }
 
-function onMoveSelectChange(rule: BlockRule, select: HTMLSelectElement): void {
+async function onMoveSelectChange(rule: BlockRule, select: HTMLSelectElement): Promise<void> {
   const value = select.value;
 
   if (value === NEW_GROUP_SENTINEL) {
-    const raw = window.prompt('New group name', rule.group ?? '');
-    // Cancelled — revert the select to whatever it was showing.
-    if (raw === null) {
+    const name = await promptForGroupName();
+    if (name === null) {
+      // Cancelled — revert the select to whatever it was showing.
       select.value = rule.group ?? '';
       return;
     }
-    const trimmed = raw.trim();
-    if (!trimmed) {
-      select.value = rule.group ?? '';
-      return;
-    }
-    const v = validateGroup(trimmed);
-    if (!v.valid) {
-      window.alert(v.message ?? 'Invalid group name.');
-      select.value = rule.group ?? '';
-      return;
-    }
-    applyRuleGroup(rule, trimmed);
+    applyRuleGroup(rule, name);
     return;
   }
 

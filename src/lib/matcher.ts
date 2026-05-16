@@ -171,8 +171,7 @@ function matchWildcard(rawUrl: string, _normalisedUrl: string, pattern: string):
   const path = parsed.pathname || '/';
   const withScheme =
     `${parsed.protocol}//${parsed.host}${path}${parsed.search}${parsed.hash}`.toLowerCase();
-  const withoutScheme =
-    `${parsed.host}${path}${parsed.search}${parsed.hash}`.toLowerCase();
+  const withoutScheme = `${parsed.host}${path}${parsed.search}${parsed.hash}`.toLowerCase();
 
   const pLower = pattern.toLowerCase();
   const patternHasScheme = /^[a-z][a-z0-9+.-]*:\/\//.test(pLower);

@@ -258,7 +258,9 @@ body {
   text-decoration: none;
   border-bottom: 1px solid transparent;
   padding-bottom: 0.125rem;
-  transition: color 120ms, border-color 120ms;
+  transition:
+    color 120ms,
+    border-color 120ms;
 }
 .footer-link:hover,
 .footer-link:focus-visible {

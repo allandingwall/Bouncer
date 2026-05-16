@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "group": "Entertainment",
+  "rules": [
+    { "pattern": "youtube.com", "matchType": "domain", "enabled": true },
+    { "pattern": "netflix.com", "matchType": "domain", "enabled": true },
+    { "pattern": "twitch.tv", "matchType": "domain", "enabled": true },
+    { "pattern": "hulu.com", "matchType": "domain", "enabled": true },
+    { "pattern": "primevideo.com", "matchType": "domain", "enabled": true },
+    { "pattern": "disneyplus.com", "matchType": "domain", "enabled": true },
+    { "pattern": "max.com", "matchType": "domain", "enabled": true },
+    { "pattern": "spotify.com", "matchType": "domain", "enabled": true }
+  ]
+}

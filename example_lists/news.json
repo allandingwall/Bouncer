@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "group": "News",
+  "rules": [
+    { "pattern": "news.ycombinator.com", "matchType": "domain", "enabled": true },
+    { "pattern": "nytimes.com", "matchType": "domain", "enabled": true },
+    { "pattern": "washingtonpost.com", "matchType": "domain", "enabled": true },
+    { "pattern": "bbc.com", "matchType": "domain", "enabled": true },
+    { "pattern": "bbc.co.uk", "matchType": "domain", "enabled": true },
+    { "pattern": "theguardian.com", "matchType": "domain", "enabled": true },
+    { "pattern": "reuters.com", "matchType": "domain", "enabled": true },
+    { "pattern": "cnn.com", "matchType": "domain", "enabled": true },
+    { "pattern": "wsj.com", "matchType": "domain", "enabled": true },
+    { "pattern": "apnews.com", "matchType": "domain", "enabled": true }
+  ]
+}

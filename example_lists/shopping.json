@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "group": "Shopping",
+  "rules": [
+    { "pattern": "amazon.com", "matchType": "domain", "enabled": true },
+    { "pattern": "ebay.com", "matchType": "domain", "enabled": true },
+    { "pattern": "etsy.com", "matchType": "domain", "enabled": true },
+    { "pattern": "target.com", "matchType": "domain", "enabled": true },
+    { "pattern": "walmart.com", "matchType": "domain", "enabled": true },
+    { "pattern": "aliexpress.com", "matchType": "domain", "enabled": true },
+    { "pattern": "temu.com", "matchType": "domain", "enabled": true },
+    { "pattern": "shein.com", "matchType": "domain", "enabled": true }
+  ]
+}

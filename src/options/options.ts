@@ -219,7 +219,7 @@ function renderList(): void {
 
   if (state.rules.length === 0) {
     empty.hidden = false;
-    empty.textContent = 'No rules yet. Add one above.';
+    empty.textContent = 'No rules yet.';
     return;
   }
   if (visible.length === 0) {

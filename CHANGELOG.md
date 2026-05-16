@@ -20,3 +20,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Popup: quick-add for the active tab. Auto-suggests a pattern based on match type (`hostname` for domain, full URL for exact, `*.host/*` for wildcard) and switches when the user changes type. 5 unit tests for the suggestion logic.
 - Icon set generated from an SVG source (U+2613 ☓ SALTIRE in clay on kraft) via `@resvg/resvg-js`. Sizes 16/32/48/96/128, regenerable via `bun run icons`.
 - GitHub Actions CI: lint, format check, typecheck, test, build, and `web-ext lint` on every PR and push to main. Uploads built `dist/` as an artifact for inspection.
+- README with install / develop / build instructions, project structure, and design notes. CONTRIBUTING.md covering tooling, workflow, conventions, and the block-page philosophy. Issue templates (bug + feature) and a PR template.

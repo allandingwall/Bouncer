@@ -2,10 +2,89 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Bouncer · Options</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Bouncer · Rules</title>
+    <link rel="stylesheet" href="./options.css" />
   </head>
   <body>
-    <!-- Options page implementation arrives in the options phase. -->
-    <p>Bouncer options</p>
+    <main class="page">
+      <header class="masthead">
+        <span class="wordmark" aria-hidden="true">&#xA7B3;</span>
+        <span class="visually-hidden">Bouncer</span>
+        <span class="masthead-status">rules</span>
+      </header>
+
+      <section class="intro">
+        <h1 class="headline">Rules</h1>
+        <p class="lede">Add patterns you want to keep yourself away from.</p>
+      </section>
+
+      <section class="add" aria-labelledby="add-heading">
+        <h2 id="add-heading" class="visually-hidden">Add a rule</h2>
+        <form id="add-form" class="add-form" novalidate>
+          <label class="field field-pattern">
+            <span class="field-label">Pattern</span>
+            <input
+              type="text"
+              id="add-pattern"
+              name="pattern"
+              autocomplete="off"
+              autocapitalize="off"
+              spellcheck="false"
+              placeholder="reddit.com"
+              required
+            />
+          </label>
+          <label class="field field-type">
+            <span class="field-label">Type</span>
+            <select id="add-type" name="matchType">
+              <option value="domain">Domain</option>
+              <option value="exact">Exact URL</option>
+              <option value="wildcard">Wildcard</option>
+            </select>
+          </label>
+          <label class="field field-note">
+            <span class="field-label">Note (optional)</span>
+            <input type="text" id="add-note" name="note" autocomplete="off" placeholder="focus hours" />
+          </label>
+          <button type="submit" class="btn btn-primary">Add rule</button>
+        </form>
+        <p id="add-error" class="error" role="alert" hidden></p>
+      </section>
+
+      <section class="list" aria-labelledby="list-heading">
+        <header class="list-header">
+          <h2 id="list-heading" class="visually-hidden">Rules</h2>
+          <label class="search">
+            <span class="visually-hidden">Search</span>
+            <input
+              type="search"
+              id="search"
+              placeholder="Search"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </label>
+          <span id="rule-count" class="rule-count" aria-live="polite">0 rules</span>
+          <span id="storage-note" class="storage-note" hidden></span>
+        </header>
+
+        <ul id="rules" class="rules" aria-label="Current rules">
+          <!-- populated by JS -->
+        </ul>
+
+        <p id="empty" class="empty" hidden>No rules yet. Add one above.</p>
+      </section>
+
+      <section class="io">
+        <button id="export" type="button" class="btn">Export JSON</button>
+        <button id="import" type="button" class="btn">Import JSON</button>
+        <input id="import-file" type="file" accept="application/json,.json" hidden />
+        <p id="io-message" class="io-message" role="status"></p>
+      </section>
+    </main>
+
+    <script type="module" src="./options.ts"></script>
   </body>
 </html>

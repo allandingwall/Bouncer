@@ -1,0 +1,160 @@
+import type { BlockRule, MatchType } from './types.js';
+import { normaliseDomain } from './matcher.js';
+import { CURRENT_SCHEMA_VERSION } from './types.js';
+
+/**
+ * CRUD helpers and validation for BlockRule values.
+ *
+ * Pure — no I/O. The options/popup UIs glue these together with the storage layer.
+ */
+
+export interface ValidationResult {
+  valid: boolean;
+  /** Human-readable error suitable for inline display. */
+  message?: string;
+}
+
+export function validatePattern(pattern: string, matchType: MatchType): ValidationResult {
+  const trimmed = pattern.trim();
+  if (!trimmed) return { valid: false, message: 'Pattern is required.' };
+  if (/\s/.test(trimmed)) return { valid: false, message: 'Pattern cannot contain whitespace.' };
+
+  switch (matchType) {
+    case 'exact':
+      return URL.canParse(trimmed)
+        ? { valid: true }
+        : { valid: false, message: 'Must be a full URL (e.g. https://example.com/path).' };
+
+    case 'domain': {
+      const d = normaliseDomain(trimmed);
+      if (!d.includes('.')) return { valid: false, message: 'Domain must contain at least one dot.' };
+      if (/[*?#]/.test(d)) return { valid: false, message: 'Domain cannot contain wildcards.' };
+      if (!/^[a-z0-9.-]+$/i.test(d)) return { valid: false, message: 'Domain contains invalid characters.' };
+      return { valid: true };
+    }
+
+    case 'wildcard':
+      if (!trimmed.includes('*')) {
+        return { valid: false, message: 'Wildcard pattern must contain at least one "*".' };
+      }
+      if (trimmed === '*' || trimmed === '*.*' || trimmed === '*/*') {
+        return { valid: false, message: 'Pattern is too broad — would block everything.' };
+      }
+      return { valid: true };
+  }
+}
+
+function generateId(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID();
+  }
+  // Fallback: timestamp + random suffix. Sufficient for storage keys, not cryptographically meaningful.
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+export interface CreateRuleInput {
+  pattern: string;
+  matchType: MatchType;
+  note?: string;
+  enabled?: boolean;
+}
+
+export function createRule(input: CreateRuleInput): BlockRule {
+  const rule: BlockRule = {
+    id: generateId(),
+    pattern: input.pattern.trim(),
+    matchType: input.matchType,
+    enabled: input.enabled ?? true,
+    createdAt: Date.now(),
+  };
+  if (input.note && input.note.trim()) rule.note = input.note.trim();
+  return rule;
+}
+
+export function updateRule(rule: BlockRule, patch: Partial<Omit<BlockRule, 'id' | 'createdAt'>>): BlockRule {
+  const next: BlockRule = { ...rule };
+  if (patch.pattern !== undefined) next.pattern = patch.pattern.trim();
+  if (patch.matchType !== undefined) next.matchType = patch.matchType;
+  if (patch.enabled !== undefined) next.enabled = patch.enabled;
+  if (patch.note !== undefined) {
+    const n = patch.note.trim();
+    if (n) next.note = n;
+    else delete next.note;
+  }
+  return next;
+}
+
+/** True if two rules describe the same intent (same pattern + matchType). */
+export function isDuplicate(a: BlockRule, b: BlockRule): boolean {
+  return a.pattern === b.pattern && a.matchType === b.matchType;
+}
+
+/** Serialise rules to a stable, human-readable JSON document for export. */
+export function serializeRules(rules: readonly BlockRule[]): string {
+  return JSON.stringify({ version: CURRENT_SCHEMA_VERSION, rules }, null, 2) + '\n';
+}
+
+export interface ImportResult {
+  rules: BlockRule[];
+  /** Number of entries skipped because they were malformed. */
+  skipped: number;
+}
+
+/** Parse an exported JSON document back into rules. Tolerates partially-malformed entries. */
+export function deserializeRules(input: string): ImportResult {
+  let data: unknown;
+  try {
+    data = JSON.parse(input);
+  } catch {
+    throw new Error('Could not parse JSON.');
+  }
+
+  if (typeof data !== 'object' || data === null) {
+    throw new Error('Expected an object with a "rules" array.');
+  }
+
+  const rulesField = (data as { rules?: unknown }).rules;
+  if (!Array.isArray(rulesField)) {
+    throw new Error('Expected an object with a "rules" array.');
+  }
+
+  const out: BlockRule[] = [];
+  let skipped = 0;
+
+  for (const item of rulesField) {
+    const parsed = parseRule(item);
+    if (parsed) out.push(parsed);
+    else skipped += 1;
+  }
+
+  return { rules: out, skipped };
+}
+
+function parseRule(input: unknown): BlockRule | null {
+  if (typeof input !== 'object' || input === null) return null;
+  const r = input as Record<string, unknown>;
+
+  const pattern = typeof r.pattern === 'string' ? r.pattern.trim() : '';
+  const matchType = r.matchType;
+  if (!pattern) return null;
+  if (matchType !== 'exact' && matchType !== 'domain' && matchType !== 'wildcard') return null;
+
+  const enabled = typeof r.enabled === 'boolean' ? r.enabled : true;
+  const createdAt = typeof r.createdAt === 'number' && Number.isFinite(r.createdAt) ? r.createdAt : Date.now();
+  const id = typeof r.id === 'string' && r.id ? r.id : generateId();
+
+  const rule: BlockRule = { id, pattern, matchType, enabled, createdAt };
+  if (typeof r.note === 'string' && r.note.trim()) rule.note = r.note.trim();
+  return rule;
+}
+
+/** Case-insensitive substring search across pattern + note. */
+export function filterRules(rules: readonly BlockRule[], query: string): BlockRule[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [...rules];
+  return rules.filter((r) => {
+    if (r.pattern.toLowerCase().includes(q)) return true;
+    if (r.note && r.note.toLowerCase().includes(q)) return true;
+    return false;
+  });
+}

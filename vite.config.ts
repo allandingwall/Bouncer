@@ -3,9 +3,9 @@ import webExtension from 'vite-plugin-web-extension';
 import { resolve } from 'node:path';
 
 export default defineConfig({
-  root: '.',
+  root: resolve(__dirname, 'src'),
   build: {
-    outDir: 'dist',
+    outDir: resolve(__dirname, 'dist'),
     emptyOutDir: true,
     sourcemap: true,
     target: 'es2022',
@@ -14,7 +14,7 @@ export default defineConfig({
     webExtension({
       manifest: resolve(__dirname, 'src/manifest.json'),
       browser: 'firefox',
-      additionalInputs: ['src/blocked/blocked.html'],
+      additionalInputs: ['blocked/blocked.html'],
     }),
   ],
 });

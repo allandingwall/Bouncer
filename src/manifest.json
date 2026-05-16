@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Bouncer",
+  "version": "0.1.0",
+  "description": "A strict, no-bypass website blocker.",
+  "author": "Allan Dingwall",
+  "homepage_url": "https://github.com/allandingwall/Bouncer",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "bouncer@dingwall.dev",
+      "strict_min_version": "121.0"
+    }
+  },
+  "permissions": ["storage", "tabs", "declarativeNetRequest"],
+  "host_permissions": ["*://*/*"],
+  "background": {
+    "scripts": ["background/service-worker.ts"]
+  },
+  "action": {
+    "default_title": "Bouncer",
+    "default_popup": "popup/popup.html"
+  },
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["blocked/blocked.html"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

@@ -72,7 +72,9 @@ function onClientNav(details: browser.webNavigation._OnHistoryStateUpdatedDetail
   if (!shouldGuard(details.url)) return;
   const matches = findMatchingRules(details.url, cachedRules);
   if (matches.length === 0) return;
-  void browser.tabs.update(details.tabId, { url: buildBlockUrl(details.url) });
+  browser.tabs.update(details.tabId, { url: buildBlockUrl(details.url) }).catch((err: unknown) => {
+    console.error('[Bouncer] SPA redirect failed', err);
+  });
 }
 
 browser.webNavigation.onHistoryStateUpdated.addListener(onClientNav);

@@ -160,6 +160,12 @@ body {
   flex-direction: column;
   gap: 0.75rem;
 }
+/* Author `display: flex` outranks the UA `[hidden] { display: none }`
+   rule, so `form.hidden = true` would leave the fields visible without
+   this explicit reinstatement. */
+.add-form[hidden] {
+  display: none;
+}
 .field {
   display: flex;
   flex-direction: column;

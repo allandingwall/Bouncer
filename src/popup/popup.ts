@@ -34,18 +34,48 @@ async function init(): Promise<void> {
   // already refuses to match them, but suppressing the suggestion here
   // keeps the user from typing a pattern that would silently never apply.
   const isInternal = rawUrl !== null && isExtensionOrInternalUrl(rawUrl);
-  currentUrl = isInternal ? null : rawUrl;
+  const canBlock = rawUrl !== null && !isInternal;
+  currentUrl = canBlock ? rawUrl : null;
 
-  $<HTMLParagraphElement>('#current-url').textContent = isInternal
-    ? "This is a browser or extension page — Bouncer can't block these."
-    : (currentUrl ?? 'No URL available for this tab.');
+  const urlEl = $<HTMLParagraphElement>('#current-url');
+  if (canBlock) {
+    urlEl.textContent = rawUrl;
+    urlEl.classList.remove('current-url-unavailable');
+  } else {
+    urlEl.textContent = "Blocking isn't available on this page.";
+    urlEl.classList.add('current-url-unavailable');
+  }
+
+  // When blocking isn't available, drop the entire form from the layout
+  // and surface only the "Manage all rules" link. Hiding (not just
+  // disabling) keeps the popup uncluttered — there's nothing meaningful
+  // the user could do with the inputs.
+  const form = $<HTMLFormElement>('#add-form');
+  form.hidden = !canBlock;
+
+  // Wire the always-present pieces first.
+  $<HTMLAnchorElement>('#open-options').addEventListener('click', (e) => {
+    e.preventDefault();
+    void (async (): Promise<void> => {
+      try {
+        await browser.runtime.openOptionsPage();
+      } catch {
+        // Fall back to opening the options page as a tab if the API rejects.
+        await browser.tabs.create({ url: browser.runtime.getURL('options/options.html') });
+      }
+      window.close();
+    })();
+  });
+  await wireGlobalToggle();
+
+  if (!canBlock) return;
 
   const select = $<HTMLSelectElement>('#match-type');
   refreshPattern(select.value as MatchType);
 
   select.addEventListener('change', () => refreshPattern(select.value as MatchType));
 
-  $<HTMLFormElement>('#add-form').addEventListener('submit', (e) => {
+  form.addEventListener('submit', (e) => {
     e.preventDefault();
     void onSubmit();
   });
@@ -62,27 +92,6 @@ async function init(): Promise<void> {
   $<HTMLSelectElement>('#group').addEventListener('change', () => {
     void onGroupSelectChange();
   });
-
-  $<HTMLAnchorElement>('#open-options').addEventListener('click', (e) => {
-    e.preventDefault();
-    void (async (): Promise<void> => {
-      try {
-        await browser.runtime.openOptionsPage();
-      } catch {
-        // Fall back to opening the options page as a tab if the API rejects.
-        await browser.tabs.create({ url: browser.runtime.getURL('options/options.html') });
-      }
-      window.close();
-    })();
-  });
-
-  // Disable the form if we have no URL to work from.
-  if (!currentUrl) {
-    $<HTMLInputElement>('#pattern').disabled = true;
-    $<HTMLButtonElement>('button[type="submit"]').disabled = true;
-  }
-
-  await wireGlobalToggle();
 }
 
 async function wireGlobalToggle(): Promise<void> {

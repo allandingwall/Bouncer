@@ -145,6 +145,14 @@ body {
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--hairline);
 }
+/* Variant: blocking isn't available on this page. Swap mono for italic
+   serif so it reads as a friendly status line, not a missing/broken URL. */
+.current-url.current-url-unavailable {
+  font-family: var(--serif);
+  font-style: italic;
+  color: var(--muted);
+  opacity: 0.85;
+}
 
 /* Form */
 .add-form {

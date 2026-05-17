@@ -43,6 +43,16 @@ body {
 
 body {
   width: 22rem;
+  /* Frame the popup with an accent border when blocking is active and a
+     muted hairline when paused — a quiet, always-visible signal of the
+     extension's state without needing to read the switch label. */
+  border: 2px solid var(--accent);
+  transition:
+    border-color 180ms ease,
+    background 180ms ease;
+}
+body.is-paused {
+  border-color: var(--hairline);
 }
 
 .visually-hidden {
@@ -72,6 +82,10 @@ body {
   font-size: 1.375rem;
   color: var(--accent);
   font-weight: 500;
+  transition: color 180ms ease;
+}
+body.is-paused .wordmark {
+  color: var(--muted);
 }
 .masthead-status {
   font-family: var(--sans);

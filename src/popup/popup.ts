@@ -97,17 +97,20 @@ async function init(): Promise<void> {
 async function wireGlobalToggle(): Promise<void> {
   const input = $<HTMLInputElement>('#global-toggle');
   const label = $<HTMLSpanElement>('#global-toggle-label');
-  const setLabel = (enabled: boolean): void => {
+  const applyState = (enabled: boolean): void => {
     label.textContent = enabled ? 'active' : 'paused';
+    // Drives the accent/grey border around the popup and the wordmark
+    // colour — both purely CSS-controlled via `body.is-paused`.
+    document.body.classList.toggle('is-paused', !enabled);
   };
   try {
     input.checked = await loadGlobalEnabled();
   } catch {
     input.checked = true;
   }
-  setLabel(input.checked);
+  applyState(input.checked);
   input.addEventListener('change', () => {
-    setLabel(input.checked);
+    applyState(input.checked);
     void saveGlobalEnabled(input.checked);
   });
 }

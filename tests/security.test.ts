@@ -175,3 +175,78 @@ describe('findMatchingRules tolerates a tampered rule list', () => {
     expect(findMatchingRules('https://reddit.com', rules)).toEqual([]);
   });
 });
+
+describe('the extension cannot block itself', () => {
+  // A user (or a corrupt/imported rule store) could create a rule broad
+  // enough to match the extension's own pages — popup, options, block page.
+  // If DNR ever redirected those, the user would be locked out of the very
+  // UI they need to undo the block. Multiple layers must refuse.
+
+  const broadRules: ReadonlyArray<[string, BlockRule]> = [
+    ['catch-everything wildcard (host)', rule({ pattern: '*/*.html', matchType: 'wildcard' })],
+    ['scheme-less wildcard', rule({ pattern: '*/blocked/*', matchType: 'wildcard' })],
+    ['domain rule on extension UUID', rule({ pattern: 'abc', matchType: 'domain' })],
+  ];
+
+  const internalUrls: readonly string[] = [
+    'moz-extension://abc/blocked/blocked.html',
+    'moz-extension://abc/options/options.html',
+    'moz-extension://abc/popup/popup.html',
+    'chrome-extension://abc/blocked/blocked.html',
+    'about:addons',
+    'about:config',
+    'view-source:https://example.com/',
+    'file:///Users/x/test.html',
+  ];
+
+  it.each(broadRules)('matcher refuses to match internal URLs against %s', (_label, r) => {
+    for (const url of internalUrls) {
+      expect(ruleMatches(url, r)).toBe(false);
+    }
+  });
+
+  it('validatePattern rejects wildcards with non-http(s) schemes', () => {
+    expect(validatePattern('moz-extension://*/blocked/*', 'wildcard').valid).toBe(false);
+    expect(validatePattern('chrome-extension://*/options/*', 'wildcard').valid).toBe(false);
+    expect(validatePattern('about://*', 'wildcard').valid).toBe(false);
+    expect(validatePattern('file://*', 'wildcard').valid).toBe(false);
+    // Scheme-less and explicit http(s) wildcards remain valid.
+    expect(validatePattern('https://*.example.com/*', 'wildcard').valid).toBe(true);
+    expect(validatePattern('*.example.com/*', 'wildcard').valid).toBe(true);
+  });
+
+  it('parseRule drops imported wildcard rules with hostile schemes', () => {
+    const json = JSON.stringify({
+      version: 1,
+      rules: [
+        { pattern: 'moz-extension://*/blocked/*', matchType: 'wildcard', enabled: true, createdAt: 1 },
+        { pattern: 'about://*', matchType: 'wildcard', enabled: true, createdAt: 1 },
+      ],
+    });
+    const result = deserializeRules(json);
+    expect(result.rules).toHaveLength(0);
+    expect(result.skipped).toBe(2);
+  });
+
+  it('buildDnrRules drops any rule whose compiled filter is not http(s)-anchored', () => {
+    // Construct a rule that bypasses validatePattern (as if it were already
+    // sitting in storage from a previous version). The DNR layer must still
+    // refuse to install a redirect for it.
+    const hostile = rule({ pattern: 'moz-extension://*/blocked/*', matchType: 'wildcard' });
+    const dnr = buildDnrRules([hostile], { blockPageUrl: BLOCK });
+    expect(dnr).toHaveLength(0);
+  });
+
+  it('DNR rules built from realistic patterns are all http(s)-anchored', () => {
+    const rules: BlockRule[] = [
+      rule({ pattern: 'https://example.com/path', matchType: 'exact' }),
+      rule({ pattern: 'reddit.com', matchType: 'domain' }),
+      rule({ pattern: '*.reddit.com/r/*', matchType: 'wildcard' }),
+    ];
+    const dnr = buildDnrRules(rules, { blockPageUrl: BLOCK });
+    expect(dnr).toHaveLength(3);
+    for (const r of dnr) {
+      expect(r.condition.regexFilter).toMatch(/^\^https\??:\/\//);
+    }
+  });
+});

@@ -1,4 +1,5 @@
 import { createRule, groupsOf, isDuplicate, validatePattern } from '../lib/rules.js';
+import { isExtensionOrInternalUrl } from '../lib/matcher.js';
 import { loadGlobalEnabled, loadRules, saveGlobalEnabled, saveRules } from '../lib/storage.js';
 import {
   insertNewGroupOption,
@@ -28,10 +29,16 @@ let cachedRules: BlockRule[] = [];
 
 async function init(): Promise<void> {
   const tab = await getActiveTab();
-  currentUrl = tab?.url ?? null;
+  const rawUrl = tab?.url ?? null;
+  // Treat extension / browser-internal tabs as unblockable. The matcher
+  // already refuses to match them, but suppressing the suggestion here
+  // keeps the user from typing a pattern that would silently never apply.
+  const isInternal = rawUrl !== null && isExtensionOrInternalUrl(rawUrl);
+  currentUrl = isInternal ? null : rawUrl;
 
-  $<HTMLParagraphElement>('#current-url').textContent =
-    currentUrl ?? 'No URL available for this tab.';
+  $<HTMLParagraphElement>('#current-url').textContent = isInternal
+    ? "This is a browser or extension page — Bouncer can't block these."
+    : (currentUrl ?? 'No URL available for this tab.');
 
   const select = $<HTMLSelectElement>('#match-type');
   refreshPattern(select.value as MatchType);

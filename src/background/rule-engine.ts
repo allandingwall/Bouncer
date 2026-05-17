@@ -85,6 +85,19 @@ export function buildDnrRules(rules: readonly BlockRule[], opts: BuildOptions): 
         break;
     }
 
+    // Defence in depth: only http(s) navigations are ever blockable. Any
+    // compiled filter that doesn't start with an http(s) anchor is dropped,
+    // so a rule that escapes upstream validation can never end up
+    // intercepting moz-extension://, about:, or file: navigations — which
+    // would render the extension's own UI unreachable.
+    if (
+      !regexFilter.startsWith('^https://') &&
+      !regexFilter.startsWith('^http://') &&
+      !regexFilter.startsWith('^https?://')
+    ) {
+      continue;
+    }
+
     out.push({
       id: id++,
       priority: 1,

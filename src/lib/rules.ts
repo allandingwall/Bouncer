@@ -85,6 +85,15 @@ export function validatePattern(pattern: string, matchType: MatchType): Validati
           message: `Too many wildcards (max ${MAX_WILDCARD_STARS}).`,
         };
       }
+      // If the pattern carries an explicit scheme, restrict it to http(s).
+      // Anything else (moz-extension://*, about://*, file://*) could only
+      // match extension or browser-internal pages — which the matcher and
+      // DNR layer also refuse to touch, but rejecting it here keeps the
+      // invalid rule from ever being stored.
+      const schemeMatch = /^([a-z][a-z0-9+.-]*):\/\//i.exec(trimmed);
+      if (schemeMatch && schemeMatch[1]?.toLowerCase() !== 'http' && schemeMatch[1]?.toLowerCase() !== 'https') {
+        return { valid: false, message: 'Wildcard scheme must be http or https.' };
+      }
       return { valid: true };
     }
   }

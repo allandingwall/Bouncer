@@ -117,10 +117,39 @@ function compileSegment(s: string): string {
   return s.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*');
 }
 
+/**
+ * Schemes the matcher refuses to evaluate. Extension and browser-internal
+ * URLs must never be matchable by user rules — blocking the extension's own
+ * pages would lock the user out of the UI that disables the block.
+ */
+const NEVER_MATCHABLE_SCHEMES = new Set([
+  'moz-extension:',
+  'chrome-extension:',
+  'about:',
+  'chrome:',
+  'resource:',
+  'view-source:',
+  'file:',
+]);
+
+/** True if the URL belongs to the browser/extension and must not be matchable. */
+export function isExtensionOrInternalUrl(url: string): boolean {
+  try {
+    return NEVER_MATCHABLE_SCHEMES.has(new URL(url).protocol);
+  } catch {
+    return false;
+  }
+}
+
 /** True if a given URL is matched by a single rule's pattern + matchType. */
 export function ruleMatches(url: string, rule: BlockRule): boolean {
   if (!rule.enabled) return false;
   if (!rule.pattern) return false;
+
+  // Hard floor: extension and browser-internal URLs are never matchable, no
+  // matter how broad the pattern. This is the last line of defence against a
+  // rule that would otherwise hide the popup or options page.
+  if (isExtensionOrInternalUrl(url)) return false;
 
   const normalised = normaliseUrl(url);
   if (!normalised) return false;

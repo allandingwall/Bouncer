@@ -160,8 +160,7 @@ body {
 /* Guide */
 .guide {
   margin: 2.25rem 0 2.5rem;
-  padding: 1.5rem 0;
-  border-top: 1px solid var(--hairline);
+  padding: 0 0 1.5rem;
   border-bottom: 1px solid var(--hairline);
 }
 .guide-heading {
@@ -418,8 +417,78 @@ body {
   text-transform: uppercase;
   color: var(--muted);
 }
-.rule-group-delete {
+
+/* Right-aligned cluster of group-level actions (toggle, delete). */
+.rule-group-actions {
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Group-level toggle — same mental model as the master switch in the
+   masthead but quieter, smaller, and tri-state-aware (renders an
+   indeterminate dash when the group is partially enabled). */
+.group-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+.group-switch input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.group-switch-track {
+  position: relative;
+  width: 1.875rem;
+  height: 1rem;
+  background: var(--hairline);
+  border-radius: 999px;
+  transition: background 140ms;
+}
+.group-switch-track::after {
+  content: '';
+  position: absolute;
+  top: 0.125rem;
+  left: 0.125rem;
+  width: 0.75rem;
+  height: 0.75rem;
+  background: var(--bg);
+  border-radius: 50%;
+  transition: transform 140ms;
+}
+.group-switch input:checked ~ .group-switch-track {
+  background: var(--accent);
+}
+.group-switch input:checked ~ .group-switch-track::after {
+  transform: translateX(0.875rem);
+}
+/* Mixed (indeterminate) — thumb sits centred, track stays neutral, and a
+   short dash appears across the thumb to read as "neither on nor off". */
+.group-switch input:indeterminate ~ .group-switch-track::after {
+  transform: translateX(0.4375rem);
+  background: var(--muted);
+}
+.group-switch input:focus-visible ~ .group-switch-track {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.group-switch-label {
+  font-family: var(--sans);
+  font-size: 0.625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  min-width: 3rem;
+}
+.group-switch input:checked ~ .group-switch-label {
+  color: var(--accent);
+}
+
+.rule-group-delete {
   font-family: var(--sans);
   font-size: 0.6875rem;
   letter-spacing: 0.14em;
@@ -430,6 +499,29 @@ body {
   color: var(--muted);
   cursor: pointer;
   padding: 0.125rem 0;
+}
+
+/* Quiet text-link affordance. Used by "Enable all" in the list header —
+   appears only when something is disabled, so the visual weight is "nudge"
+   not "command". */
+.link-action {
+  font-family: var(--sans);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 0.125rem 0;
+}
+.link-action:hover {
+  border-bottom-color: var(--accent);
+}
+.link-action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 .rule-group-delete:hover {
   color: var(--danger);

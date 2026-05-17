@@ -108,9 +108,21 @@ function bindEvents(): void {
     void onImport(e);
   });
   $<HTMLButtonElement>('#clear-all').addEventListener('click', onClearAll);
+  $<HTMLButtonElement>('#enable-all').addEventListener('click', onEnableAll);
   $<HTMLSelectElement>('#add-group').addEventListener('change', () => {
     void onAddGroupSelectChange();
   });
+}
+
+/**
+ * Bulk-enable every rule across every group. Surfaced in the list header
+ * only when at least one rule is currently disabled, so the affordance
+ * disappears the moment it would be a no-op.
+ */
+function onEnableAll(): void {
+  if (state.rules.every((r) => r.enabled)) return;
+  state.rules = state.rules.map((r) => (r.enabled ? r : updateRule(r, { enabled: true })));
+  void persist();
 }
 
 /**
@@ -277,9 +289,21 @@ function renderClearAll(): void {
 
 function render(): void {
   renderStorageNote();
+  renderEnableAll();
   renderAddGroupSelect();
   renderList();
   renderClearAll();
+}
+
+/**
+ * Show the "Enable all" affordance only when at least one rule is disabled,
+ * so the button disappears the moment it would do nothing — keeps the list
+ * header uncluttered in the common case.
+ */
+function renderEnableAll(): void {
+  const btn = $<HTMLButtonElement>('#enable-all');
+  const anyDisabled = state.rules.some((r) => !r.enabled);
+  btn.hidden = !anyDisabled;
 }
 
 function renderAddGroupSelect(): void {
@@ -355,11 +379,13 @@ function renderGroupSection(group: string | null, rules: BlockRule[]): HTMLEleme
 
   header.append(title, countLabel);
 
+  const actions = document.createElement('div');
+  actions.className = 'rule-group-actions';
+  actions.append(renderGroupSwitch(group));
   // "Delete group" only makes sense for named groups — there's no
   // ungrouped "thing" to delete; users should clear individual rules.
-  if (group !== null) {
-    header.append(renderDeleteGroupButton(group));
-  }
+  if (group !== null) actions.append(renderDeleteGroupButton(group));
+  header.append(actions);
 
   section.append(header);
 
@@ -369,6 +395,66 @@ function renderGroupSection(group: string | null, rules: BlockRule[]): HTMLEleme
   section.append(list);
 
   return section;
+}
+
+/**
+ * Per-group enable/disable switch. Reflects the aggregate state of every
+ * rule in the group (NOT just the visible subset, so a search filter
+ * never silently changes what the toggle means):
+ *
+ *   all enabled  → checked, "active"
+ *   all disabled → unchecked, "paused"
+ *   mixed        → indeterminate, "mixed"
+ *
+ * Clicking commits one of two outcomes: if anything is disabled (mixed or
+ * all-off) the group is turned fully on; if everything is on, the group
+ * is turned fully off. This mirrors how OS-level group toggles behave and
+ * avoids a confusing "click does different things in different states".
+ */
+function renderGroupSwitch(group: string | null): HTMLLabelElement {
+  const inGroup = state.rules.filter((r) => (r.group ?? null) === group);
+  const enabledCount = inGroup.filter((r) => r.enabled).length;
+  const allOn = enabledCount === inGroup.length;
+  const allOff = enabledCount === 0;
+  const labelName = group === null ? 'Ungrouped' : group;
+
+  const label = document.createElement('label');
+  label.className = 'group-switch';
+  label.title = allOn
+    ? `Pause every rule in ${labelName}`
+    : `Enable every rule in ${labelName}`;
+
+  const input = document.createElement('input');
+  input.type = 'checkbox';
+  input.checked = allOn;
+  // Note: must be set after the element is in its final state; the DOM
+  // ignores .indeterminate on a detached element if .checked is also being set.
+  if (!allOn && !allOff) input.indeterminate = true;
+  input.setAttribute(
+    'aria-label',
+    allOn ? `Pause ${labelName} rules` : `Enable ${labelName} rules`,
+  );
+
+  const track = document.createElement('span');
+  track.className = 'group-switch-track';
+  track.setAttribute('aria-hidden', 'true');
+
+  const text = document.createElement('span');
+  text.className = 'group-switch-label';
+  text.textContent = allOn ? 'active' : allOff ? 'paused' : 'mixed';
+
+  input.addEventListener('change', () => {
+    const turnOn = !allOn; // mixed and all-off both resolve to "turn on".
+    state.rules = state.rules.map((r) => {
+      if ((r.group ?? null) !== group) return r;
+      if (r.enabled === turnOn) return r;
+      return updateRule(r, { enabled: turnOn });
+    });
+    void persist();
+  });
+
+  label.append(input, track, text);
+  return label;
 }
 
 function renderDeleteGroupButton(group: string): HTMLButtonElement {

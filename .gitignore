@@ -26,6 +26,7 @@ pnpm-debug.log*
 # Local working notes (not part of the project)
 code_review.md
 CODEBASE_MAP.md
+design-preview.html
 
 # Editor / OS
 .DS_Store

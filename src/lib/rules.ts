@@ -91,7 +91,11 @@ export function validatePattern(pattern: string, matchType: MatchType): Validati
       // DNR layer also refuse to touch, but rejecting it here keeps the
       // invalid rule from ever being stored.
       const schemeMatch = /^([a-z][a-z0-9+.-]*):\/\//i.exec(trimmed);
-      if (schemeMatch && schemeMatch[1]?.toLowerCase() !== 'http' && schemeMatch[1]?.toLowerCase() !== 'https') {
+      if (
+        schemeMatch &&
+        schemeMatch[1]?.toLowerCase() !== 'http' &&
+        schemeMatch[1]?.toLowerCase() !== 'https'
+      ) {
         return { valid: false, message: 'Wildcard scheme must be http or https.' };
       }
       return { valid: true };

@@ -420,9 +420,7 @@ function renderGroupSwitch(group: string | null): HTMLLabelElement {
 
   const label = document.createElement('label');
   label.className = 'group-switch';
-  label.title = allOn
-    ? `Pause every rule in ${labelName}`
-    : `Enable every rule in ${labelName}`;
+  label.title = allOn ? `Pause every rule in ${labelName}` : `Enable every rule in ${labelName}`;
 
   const input = document.createElement('input');
   input.type = 'checkbox';

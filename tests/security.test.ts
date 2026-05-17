@@ -219,7 +219,12 @@ describe('the extension cannot block itself', () => {
     const json = JSON.stringify({
       version: 1,
       rules: [
-        { pattern: 'moz-extension://*/blocked/*', matchType: 'wildcard', enabled: true, createdAt: 1 },
+        {
+          pattern: 'moz-extension://*/blocked/*',
+          matchType: 'wildcard',
+          enabled: true,
+          createdAt: 1,
+        },
         { pattern: 'about://*', matchType: 'wildcard', enabled: true, createdAt: 1 },
       ],
     });

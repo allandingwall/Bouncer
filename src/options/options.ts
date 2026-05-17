@@ -85,13 +85,16 @@ async function init(): Promise<void> {
 function wireGlobalToggle(initial: boolean): void {
   const input = $<HTMLInputElement>('#global-toggle');
   const label = $<HTMLSpanElement>('#global-toggle-label');
-  const setLabel = (enabled: boolean): void => {
+  const applyState = (enabled: boolean): void => {
     label.textContent = enabled ? 'active' : 'paused';
+    // Drives the wordmark colour via `body.is-paused` — keeps the
+    // options page's "Bouncer" title in sync with the popup's signal.
+    document.body.classList.toggle('is-paused', !enabled);
   };
   input.checked = initial;
-  setLabel(initial);
+  applyState(initial);
   input.addEventListener('change', () => {
-    setLabel(input.checked);
+    applyState(input.checked);
     void saveGlobalEnabled(input.checked);
   });
 }

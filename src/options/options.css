@@ -74,6 +74,10 @@ body {
   color: var(--accent);
   font-weight: 500;
   letter-spacing: 0.02em;
+  transition: color 180ms ease;
+}
+body.is-paused .wordmark {
+  color: var(--muted);
 }
 .masthead-status {
   font-family: var(--sans);

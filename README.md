@@ -1,8 +1,10 @@
 # Bouncer
 
-A strict, no-bypass website blocker for Firefox.
+A modern website blocker for Firefox.
 
-Bouncer redirects matched URLs to a calm in-extension block page. There is no snooze, no temporary disable, no "unblock anyway" link — once a rule is in place, the only way past it is to delete the rule yourself from the options page.
+Bouncer redirects matched URLs to a calm in-extension block page. There is no snooze, no temporary disable, no "unblock anyway" link. Once a rule is in place, the only way past it is to delete the rule yourself from the options page or deactivate the extension.
+
+The extension provides a microboundary, leading to more mindful computer interactions.
 
 ## Status
 

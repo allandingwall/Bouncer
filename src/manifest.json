@@ -12,6 +12,11 @@
       "data_collection_permissions": { "required": ["none"] }
     }
   },
+  "icons": {
+    "48": "icons/bouncer.svg",
+    "96": "icons/bouncer.svg",
+    "128": "icons/bouncer.svg"
+  },
   "permissions": ["storage", "declarativeNetRequest", "webNavigation"],
   "host_permissions": ["*://*/*"],
   "content_security_policy": {
@@ -22,7 +27,11 @@
   },
   "action": {
     "default_title": "Bouncer",
-    "default_popup": "popup/popup.html"
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/bouncer.svg",
+      "32": "icons/bouncer.svg"
+    }
   },
   "options_ui": {
     "page": "options/options.html",

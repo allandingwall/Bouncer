@@ -4,3 +4,9 @@ coverage/
 .web-ext-artifacts/
 *.min.js
 *.min.css
+
+# Local working notes (mirrored in .gitignore)
+CODEBASE_MAP.md
+code_review.md
+final_code_review.md
+design-preview.html

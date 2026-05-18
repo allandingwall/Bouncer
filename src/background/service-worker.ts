@@ -17,6 +17,8 @@ import type { BlockRule } from '../lib/types.js';
  */
 
 const BLOCK_PAGE_PATH = 'blocked/blocked.html';
+const ICON_ACTIVE = 'icons/bouncer.svg';
+const ICON_PAUSED = 'icons/bouncer-paused.svg';
 
 let cachedRules: BlockRule[] = [];
 let globallyEnabled = true;
@@ -32,6 +34,7 @@ async function syncFromStorage(): Promise<void> {
   cachedRules = state.rules;
   globallyEnabled = state.globalEnabled !== false;
   await safelyApply();
+  updateToolbarIcon();
 }
 
 async function safelyApply(): Promise<void> {
@@ -40,6 +43,19 @@ async function safelyApply(): Promise<void> {
   } catch (err) {
     console.error('[Bouncer] failed to apply rules', err);
   }
+}
+
+/**
+ * Swap the toolbar icon between the clay (active) and muted-grey (paused)
+ * saltires so the master-switch state is visible without opening the popup.
+ * The popup border + wordmark already carry the same signal — this just
+ * lifts it up into the browser chrome.
+ */
+function updateToolbarIcon(): void {
+  const path = globallyEnabled ? ICON_ACTIVE : ICON_PAUSED;
+  browser.action.setIcon({ path }).catch((err: unknown) => {
+    console.error('[Bouncer] failed to update toolbar icon', err);
+  });
 }
 
 browser.runtime.onInstalled.addListener(() => {
@@ -54,6 +70,7 @@ onStateChanged((state) => {
   cachedRules = state.rules;
   globallyEnabled = state.globalEnabled !== false;
   void safelyApply();
+  updateToolbarIcon();
 });
 
 /**

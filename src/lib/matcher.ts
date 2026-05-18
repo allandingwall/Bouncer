@@ -166,9 +166,17 @@ export function ruleMatches(url: string, rule: BlockRule): boolean {
 
 function matchExact(normalisedUrl: string, pattern: string): boolean {
   const normalisedPattern = normaliseUrl(pattern);
-  if (normalisedPattern) return normalisedPattern === normalisedUrl;
-  // Fallback: literal compare (lets users paste exact strings even if unparseable).
-  return pattern === normalisedUrl;
+  const target = normalisedPattern ?? pattern;
+  // Trailing-slash leniency mirrors the DNR-side `/?$` anchor, so a rule
+  // saved as `https://example.com/foo` still matches a URL that ended up
+  // as `https://example.com/foo/` (and vice versa). Without this, DNR
+  // would redirect but the block page's matcher would report "(rule no
+  // longer present)" — a confusing inconsistency between layers.
+  return stripTrailingSlash(target) === stripTrailingSlash(normalisedUrl);
+}
+
+function stripTrailingSlash(s: string): string {
+  return s.length > 1 && s.endsWith('/') ? s.slice(0, -1) : s;
 }
 
 function matchDomain(normalisedUrl: string, pattern: string): boolean {

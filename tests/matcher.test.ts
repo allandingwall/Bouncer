@@ -97,6 +97,17 @@ describe('ruleMatches — exact', () => {
     );
   });
 
+  // Regression: DNR emits `^pattern/?$`, so the request is redirected
+  // regardless of trailing slash. The JS matcher (running on the block
+  // page after the redirect) must agree, or the page reports "rule no
+  // longer present" even though DNR just fired the redirect.
+  it('treats a trailing slash on non-root paths as equivalent', () => {
+    const r = rule({ pattern: 'https://example.com/foo', matchType: 'exact' });
+    expect(ruleMatches('https://example.com/foo/', r)).toBe(true);
+    const r2 = rule({ pattern: 'https://example.com/foo/', matchType: 'exact' });
+    expect(ruleMatches('https://example.com/foo', r2)).toBe(true);
+  });
+
   it('is case-sensitive on path', () => {
     expect(
       ruleMatches(

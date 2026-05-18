@@ -1,4 +1,4 @@
-import { findMatchingRules } from '../lib/matcher.js';
+import { isBlocked } from '../lib/matcher.js';
 import { loadState, onStateChanged } from '../lib/storage.js';
 import { applyRules } from './rule-engine.js';
 import type { BlockRule } from '../lib/types.js';
@@ -77,8 +77,10 @@ async function onClientNav(
   if (!shouldGuard(details.url)) return;
   await ready;
   if (!globallyEnabled) return;
-  const matches = findMatchingRules(details.url, cachedRules);
-  if (matches.length === 0) return;
+  // Short-circuit on the first match — the block page re-runs the full
+  // matcher to enumerate every applicable rule, so we don't need the
+  // list here.
+  if (!isBlocked(details.url, cachedRules)) return;
   try {
     await browser.tabs.update(details.tabId, { url: buildBlockUrl(details.url) });
   } catch (err: unknown) {

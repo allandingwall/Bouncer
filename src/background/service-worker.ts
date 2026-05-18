@@ -21,6 +21,12 @@ const BLOCK_PAGE_PATH = 'blocked/blocked.html';
 let cachedRules: BlockRule[] = [];
 let globallyEnabled = true;
 
+// Resolves once the SW has loaded state from storage at least once.
+// Event handlers await this so a navigation that arrives on a cold-
+// started service worker (before the first sync finishes) can't slip
+// past with an empty rule cache.
+let ready: Promise<void> = syncFromStorage();
+
 async function syncFromStorage(): Promise<void> {
   const { state } = await loadState();
   cachedRules = state.rules;
@@ -37,11 +43,11 @@ async function safelyApply(): Promise<void> {
 }
 
 browser.runtime.onInstalled.addListener(() => {
-  void syncFromStorage();
+  ready = syncFromStorage();
 });
 
 browser.runtime.onStartup.addListener(() => {
-  void syncFromStorage();
+  ready = syncFromStorage();
 });
 
 onStateChanged((state) => {
@@ -49,8 +55,6 @@ onStateChanged((state) => {
   globallyEnabled = state.globalEnabled !== false;
   void safelyApply();
 });
-
-void syncFromStorage();
 
 /**
  * SPA route guard. DNR catches real navigations; this catches pushState /
@@ -66,15 +70,22 @@ function shouldGuard(url: string): boolean {
   return url.startsWith('http://') || url.startsWith('https://');
 }
 
-function onClientNav(details: browser.webNavigation._OnHistoryStateUpdatedDetails): void {
-  if (!globallyEnabled) return;
+async function onClientNav(
+  details: browser.webNavigation._OnHistoryStateUpdatedDetails,
+): Promise<void> {
   if (details.frameId !== 0) return;
   if (!shouldGuard(details.url)) return;
+  await ready;
+  if (!globallyEnabled) return;
   const matches = findMatchingRules(details.url, cachedRules);
   if (matches.length === 0) return;
-  browser.tabs.update(details.tabId, { url: buildBlockUrl(details.url) }).catch((err: unknown) => {
+  try {
+    await browser.tabs.update(details.tabId, { url: buildBlockUrl(details.url) });
+  } catch (err: unknown) {
     console.error('[Bouncer] SPA redirect failed', err);
-  });
+  }
 }
 
-browser.webNavigation.onHistoryStateUpdated.addListener(onClientNav);
+browser.webNavigation.onHistoryStateUpdated.addListener((details) => {
+  void onClientNav(details);
+});

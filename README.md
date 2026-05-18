@@ -37,7 +37,7 @@ bun run dev          # Vite watch mode
 bun run lint         # ESLint
 bun run format       # Prettier
 bun run typecheck    # tsc --noEmit
-bun run test         # Vitest (96 tests)
+bun run test         # Vitest
 bun run test:watch   # Vitest watch
 ```
 
@@ -67,13 +67,22 @@ src/
   options/            full rules manager (CRUD, search, import/export)
   blocked/            the brutalist-Anthropic block page
   lib/
-    matcher.ts        pure URL ↔ rule matching (40 tests)
-    rules.ts          CRUD + validation + JSON I/O (26 tests)
-    storage.ts        typed browser.storage wrapper, sync→local fallback (13 tests)
+    matcher.ts        pure URL ↔ rule matching
+    rules.ts          CRUD + validation + JSON I/O
+    storage.ts        typed browser.storage wrapper, sync→local fallback
     types.ts          BlockRule, MatchType
   manifest.json
 tests/                Vitest unit tests
 ```
+
+## Permissions
+
+Bouncer requests the smallest set that lets it block any URL the user adds:
+
+- `storage` — persists the rule list in `browser.storage.sync` (with a local fallback if sync is unavailable).
+- `declarativeNetRequest` — installs the dynamic redirect rules that send matched URLs to the in-extension block page. Bouncer never inspects request bodies or response content.
+- `webNavigation` — observes `onHistoryStateUpdated` so single-page apps (Reddit, Twitter, etc.) that route via `history.pushState` are caught. DNR cannot see those.
+- `host_permissions: ["*://*/*"]` — DNR redirects to an extension URL require host access for the URL being redirected. Since Bouncer's promise is "block any site you list", the host permission cannot be narrowed at install time. Bouncer never reads page contents.
 
 ## Design notes
 

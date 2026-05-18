@@ -53,6 +53,17 @@ const state: State = {
 /** Auto-cancel a pending two-stage confirmation after this many ms of inaction. */
 const CONFIRM_TIMEOUT_MS = 3500;
 
+/**
+ * Placeholder text for the add-rule input, keyed by match type. Mirrors
+ * the worked examples in the guide section above the form so the field
+ * always shows the right shape of pattern for the currently-selected type.
+ */
+const PATTERN_PLACEHOLDERS: Record<MatchType, string> = {
+  domain: 'reddit.com',
+  exact: 'https://news.ycombinator.com/newest',
+  wildcard: 'reddit.com/r/*',
+};
+
 let storageWarning: string | null = null;
 
 async function persist(): Promise<void> {
@@ -115,6 +126,14 @@ function bindEvents(): void {
   $<HTMLSelectElement>('#add-group').addEventListener('change', () => {
     void onAddGroupSelectChange();
   });
+  const typeSelect = $<HTMLSelectElement>('#add-type');
+  typeSelect.addEventListener('change', updatePatternPlaceholder);
+  updatePatternPlaceholder();
+}
+
+function updatePatternPlaceholder(): void {
+  const matchType = $<HTMLSelectElement>('#add-type').value as MatchType;
+  $<HTMLInputElement>('#add-pattern').placeholder = PATTERN_PLACEHOLDERS[matchType];
 }
 
 /**

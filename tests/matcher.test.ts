@@ -7,7 +7,6 @@ import {
   normaliseDomain,
   normaliseUrl,
   ruleMatches,
-  wildcardToRegExp,
 } from '../src/lib/matcher.js';
 import type { BlockRule, MatchType } from '../src/lib/types.js';
 
@@ -73,22 +72,6 @@ describe('isSameOrSubdomain', () => {
 
   it('is case-insensitive', () => {
     expect(isSameOrSubdomain('Old.Reddit.COM', 'reddit.com')).toBe(true);
-  });
-});
-
-describe('wildcardToRegExp', () => {
-  it('treats * as any-chars', () => {
-    expect(wildcardToRegExp('*.reddit.com').test('old.reddit.com')).toBe(true);
-    expect(wildcardToRegExp('*.reddit.com').test('reddit.com')).toBe(false);
-  });
-
-  it('escapes regex metacharacters', () => {
-    expect(wildcardToRegExp('a.b').test('axb')).toBe(false);
-    expect(wildcardToRegExp('a.b').test('a.b')).toBe(true);
-  });
-
-  it('anchors at both ends', () => {
-    expect(wildcardToRegExp('reddit.com').test('reddit.com/foo')).toBe(false);
   });
 });
 

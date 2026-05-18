@@ -43,11 +43,6 @@ export function isSameOrSubdomain(host: string, domain: string): boolean {
   return h.endsWith('.' + d);
 }
 
-/** Convert a wildcard pattern (`*` = any chars) into an anchored RegExp. */
-export function wildcardToRegExp(pattern: string): RegExp {
-  return new RegExp(`^${compileWildcardBody(pattern)}$`, 'i');
-}
-
 /**
  * Two-pointer glob match. `*` matches any sequence of characters; all other
  * characters compare literally. Linear in time and stack — no
